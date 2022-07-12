@@ -6,30 +6,21 @@
 </script>
 
 <!-- #region HTML -->
-<header>
-	<nav>
-		<!-- #region HTML -->
-		<div id="header-left">
-			<div id="main-menu-button" on:click={() => app.showMenu(!app.menuVisible())}>
-				<div class="menu-line" />
-				<div class="menu-line" />
-				<div class="menu-line" />
-			</div>
+
+<nav>
+	<!-- #region HTML -->
+	<div id="header-left">
+		<div id="main-menu-button" on:click={() => app.showMenu(!app.menuVisible())}>
+			<div class="menu-line" />
+			<div class="menu-line" />
+			<div class="menu-line" />
 		</div>
-		<div id="header-middle">Location</div>
-		<div id="header-right">Search</div>
-	</nav>
-</header>
+	</div>
+	<div id="header-middle">Location</div>
+	<div id="header-right">Search</div>
+</nav>
 
 <style>
-	header {
-		grid-area: header;
-		position: sticky;
-		background-color: var(--primary-color);
-		color: var(--text-color-light);
-		height: var(--header-height);
-	}
-
 	nav {
 		display: grid;
 		grid-template-columns: min-content 1fr min-content;

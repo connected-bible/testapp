@@ -14,7 +14,9 @@
 </script>
 
 <div id="layout">
-	<Header />
+	<header>
+		<Header />
+	</header>
 	<main>
 		<div id="menu-body" style="display:none;">Menu&nbsp;Body</div>
 		<div
@@ -112,10 +114,17 @@
 		grid-template-areas: 'header' 'main' 'footer';
 	}
 
+	#layout > header {
+		grid-area: header;
+		background-color: var(--primary-color);
+		color: var(--text-color-light);
+		height: var(--header-height);
+	}
+
 	#layout > main {
+		grid-area: main;
 		margin: 0;
 		padding: 0;
-		grid-area: main;
 		overflow: auto;
 		display: grid;
 		grid-template-rows: 1fr;
@@ -128,7 +137,6 @@
 		background-color: #44546a;
 		color: white;
 		height: 2em;
-		position: sticky;
 	}
 
 	#menu-body {
