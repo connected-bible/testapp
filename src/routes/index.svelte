@@ -14,13 +14,9 @@
 	}
 
 	onMount(async () => {
-		let timeoutID: any = null;
 		const setDocumentHeight = () => {
-			clearTimeout(timeoutID);
-			timeoutID = setTimeout(() => {
-				const doc = document.documentElement;
-				doc.style.setProperty('--doc-height', `${window.innerHeight}px`);
-			}, 200);
+			const doc = document.documentElement;
+			doc.style.setProperty('--doc-height', `${window.innerHeight}px`);
 		};
 		window.addEventListener('resize', setDocumentHeight);
 		setDocumentHeight();
