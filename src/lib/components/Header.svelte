@@ -24,6 +24,7 @@
 <style>
 	header {
 		grid-area: header;
+		position: sticky;
 		background-color: var(--primary-color);
 		color: var(--text-color-light);
 		height: var(--header-height);

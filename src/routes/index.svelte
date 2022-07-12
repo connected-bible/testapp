@@ -127,6 +127,7 @@
 		background-color: #44546a;
 		color: white;
 		height: 2em;
+		position: sticky;
 	}
 
 	#menu-body {
