@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import Header from '$lib/components/Header.svelte';
+	import { onMount } from 'svelte';
 
 	function toggleMenu() {
 		const mnu = e$('menu-body');
@@ -12,16 +13,18 @@
 		return document.getElementById(name);
 	}
 
-	let timeoutID: any = null;
-	function setDocumentHeight() {
-		clearTimeout(timeoutID);
-		timeoutID = setTimeout(() => {
-			const doc = document.documentElement;
-			doc.style.setProperty('--doc-height', `${window.innerHeight}px`);
-		}, 200);
-	}
-	window.addEventListener('resize', setDocumentHeight);
-	setDocumentHeight();
+	onMount(async () => {
+		let timeoutID: any = null;
+		const setDocumentHeight = () => {
+			clearTimeout(timeoutID);
+			timeoutID = setTimeout(() => {
+				const doc = document.documentElement;
+				doc.style.setProperty('--doc-height', `${window.innerHeight}px`);
+			}, 200);
+		};
+		window.addEventListener('resize', setDocumentHeight);
+		setDocumentHeight();
+	});
 </script>
 
 <div id="layout">
