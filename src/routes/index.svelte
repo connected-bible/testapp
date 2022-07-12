@@ -110,7 +110,7 @@
 		display: grid;
 		height: 100vh;
 		grid-template-columns: 1fr;
-		grid-template-rows: auto 1fr auto;
+		grid-template-rows: var(--header-height) 1fr var(--footer-height);
 		grid-template-areas: 'header' 'main' 'footer';
 	}
 
@@ -127,7 +127,7 @@
 		padding: 0;
 		overflow: auto;
 		display: grid;
-		grid-template-rows: calc(100vh - var(--header-height) - var(--footer-height));
+		grid-template-rows: 1fr;
 		grid-template-columns: min-content auto 1fr auto;
 		margin: 0;
 	}
