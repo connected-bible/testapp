@@ -148,6 +148,7 @@
 		grid-template-rows: min-content 1fr min-content;
 		grid-template-areas: 'header' 'main' 'footer';
 		box-sizing: border-box;
+		overflow: hidden;
 	}
 
 	#layout > header {
@@ -156,6 +157,7 @@
 		color: var(--text-color-light);
 		box-sizing: border-box;
 		height: var(--header-height);
+		overflow: hidden;
 	}
 
 	#layout > main {
