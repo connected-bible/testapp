@@ -199,7 +199,7 @@
 		}
 
 		#content-footer {
-			margin: 30px 10px 5px 10px;
+			padding-top: 40px;
 		}
 	}
 
@@ -231,7 +231,7 @@
 	}
 
 	#content-footer {
-		margin: 10px 10px 5px 10px;
+		margin: 10px;
 		text-align: center;
 	}
 
