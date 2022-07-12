@@ -208,15 +208,9 @@
 	}
 
 	@media screen and (max-width: 600px) {
-		/*
-        #layout > footer {
+		#layout > footer {
 			height: 0;
 		}
-
-		#content-footer {
-			padding-top: 40px;
-		}
-        */
 	}
 
 	#menu {
