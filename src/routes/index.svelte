@@ -177,6 +177,12 @@
 		overflow: hidden;
 	}
 
+	@media screen and (max-width: 600px) {
+		#layout > footer {
+			height: 0;
+		}
+	}
+
 	#menu-body {
 		grid-area: 2 / 1 / 2 / 2;
 		background-color: aqua;
