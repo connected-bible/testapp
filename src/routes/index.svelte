@@ -173,7 +173,7 @@
 		background-color: #44546a;
 		color: white;
 		box-sizing: border-box;
-		height: 0; /*var(--footer-height);*/
+		height: var(--footer-height);
 		overflow: hidden;
 	}
 
