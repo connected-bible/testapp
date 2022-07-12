@@ -11,6 +11,17 @@
 	function e$(name: string) {
 		return document.getElementById(name);
 	}
+
+	let timeoutID: any = null;
+	function setDocumentHeight() {
+		clearTimeout(timeoutID);
+		timeoutID = setTimeout(() => {
+			const doc = document.documentElement;
+			doc.style.setProperty('--doc-height', `${window.innerHeight}px`);
+		}, 200);
+	}
+	window.addEventListener('resize', setDocumentHeight);
+	setDocumentHeight();
 </script>
 
 <div id="layout">
@@ -194,13 +205,15 @@
 	}
 
 	@media screen and (max-width: 600px) {
-		#layout > footer {
+		/*
+        #layout > footer {
 			height: 0;
 		}
 
 		#content-footer {
 			padding-top: 40px;
 		}
+        */
 	}
 
 	#menu {
