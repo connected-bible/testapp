@@ -197,6 +197,10 @@
 		#layout > footer {
 			height: 0;
 		}
+
+		#content-footer {
+			margin: 30px 10px 5px 10px;
+		}
 	}
 
 	#menu {
@@ -227,7 +231,7 @@
 	}
 
 	#content-footer {
-		margin: 15px 10px;
+		margin: 10px 10px 5px 10px;
 		text-align: center;
 	}
 
