@@ -145,7 +145,7 @@
 		display: grid;
 		height: 100vh;
 		grid-template-columns: 1fr;
-		grid-template-rows: min-content 1fr min-content;
+		grid-template-rows: min-content calc(1fr - var(--header-height) - var(--footer-height)) min-content;
 		grid-template-areas: 'header' 'main' 'footer';
 	}
 
