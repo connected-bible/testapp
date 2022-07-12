@@ -127,7 +127,7 @@
 		padding: 0;
 		overflow: auto;
 		display: grid;
-		grid-template-rows: 1fr;
+		grid-template-rows: calc(100vh - var(--header-height) - var(--footer-height));
 		grid-template-columns: min-content auto 1fr auto;
 		margin: 0;
 	}
@@ -136,7 +136,7 @@
 		grid-area: footer;
 		background-color: #44546a;
 		color: white;
-		height: 2em;
+		height: var(--footer-height);
 	}
 
 	#menu-body {
