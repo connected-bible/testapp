@@ -26,6 +26,7 @@
 		grid-area: header;
 		background-color: var(--primary-color);
 		color: var(--text-color-light);
+		height: var(--header-height);
 	}
 
 	nav {
