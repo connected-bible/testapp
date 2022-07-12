@@ -171,7 +171,7 @@
 	/* Grid-based layout */
 	#layout {
 		display: grid;
-		height: 100vh;
+		height: var(--doc-height);
 		grid-template-columns: 1fr;
 		grid-template-rows: min-content 1fr min-content;
 		grid-template-areas: 'header' 'main' 'footer';
