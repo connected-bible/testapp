@@ -147,6 +147,7 @@
 		grid-template-columns: 1fr;
 		grid-template-rows: min-content calc(1fr - var(--header-height) - var(--footer-height)) min-content;
 		grid-template-areas: 'header' 'main' 'footer';
+		box-sizing: border-box;
 	}
 
 	#layout > header {
@@ -164,7 +165,6 @@
 		display: grid;
 		grid-template-rows: 1fr;
 		grid-template-columns: min-content 1fr;
-		margin: 0;
 		overflow: hidden;
 	}
 
@@ -207,7 +207,5 @@
 	#view-tabs {
 		display: flex;
 		flex-direction: row;
-		grid-row-start: 3;
-		grid-column-start: 1;
 	}
 </style>
