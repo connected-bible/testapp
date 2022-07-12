@@ -100,6 +100,7 @@
 			<div>Tab 2</div>
 		</div>
 	</footer>
+	<div id="full-height">&nbsp;</div>
 </div>
 
 <style>
@@ -153,5 +154,12 @@
 		flex-direction: row;
 		grid-row-start: 3;
 		grid-column-start: 1;
+	}
+
+	#full-height {
+		position: absolute;
+		top: 0;
+		height: 100%;
+		display: none;
 	}
 </style>
