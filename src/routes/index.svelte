@@ -110,7 +110,7 @@
 		display: grid;
 		height: 100vh;
 		grid-template-columns: 1fr;
-		grid-template-rows: var(--header-height) 1fr var(--footer-height);
+		grid-template-rows: min-content 1fr min-content;
 		grid-template-areas: 'header' 'main' 'footer';
 	}
 
@@ -118,6 +118,7 @@
 		grid-area: header;
 		background-color: var(--primary-color);
 		color: var(--text-color-light);
+		box-sizing: border-box;
 		height: var(--header-height);
 	}
 
@@ -125,17 +126,18 @@
 		grid-area: main;
 		margin: 0;
 		padding: 0;
-		overflow: auto;
 		display: grid;
 		grid-template-rows: 1fr;
 		grid-template-columns: min-content auto 1fr auto;
 		margin: 0;
+		overflow: auto;
 	}
 
 	#layout > footer {
 		grid-area: footer;
 		background-color: #44546a;
 		color: white;
+		box-sizing: border-box;
 		height: var(--footer-height);
 	}
 

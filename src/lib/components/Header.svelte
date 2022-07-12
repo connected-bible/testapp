@@ -33,7 +33,6 @@
 
 	#main-menu-button {
 		width: 1.6em;
-		height: 1.6em;
 		padding: 0.3em 1em 0.3em 0.5em;
 		cursor: pointer;
 	}
