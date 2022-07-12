@@ -7,11 +7,11 @@ export class App {
 	constructor() {}
 
 	public showMenu(visible: boolean) {
-		this.e$('menu-body')!.style.display = visible ? 'block' : 'none';
+		this.e$('menu')!.style.display = visible ? 'block' : 'none';
 	}
 
 	public menuVisible(): boolean {
-		return this.e$('menu-body')!.style.display == 'block';
+		return this.e$('menu')!.style.display == 'block';
 	}
 
 	private e$(name: string): HTMLElement | null {
