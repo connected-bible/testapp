@@ -140,6 +140,7 @@
 </div>
 
 <style>
+	/* Grid-based layout */
 	#layout {
 		display: grid;
 		height: 100vh;
