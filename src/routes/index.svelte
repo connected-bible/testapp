@@ -201,6 +201,12 @@
 		}
 	}
 
+	@media screen and (max-height: 600px) {
+		#layout > footer {
+			height: 0;
+		}
+	}
+
 	#menu {
 		grid-area: 1 / 1 / 1 / 2;
 		background-color: aqua;
