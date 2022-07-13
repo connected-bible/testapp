@@ -25,6 +25,8 @@
 		display: grid;
 		grid-template-columns: min-content 1fr min-content;
 		padding-right: 10px;
+		align-items: center;
+		justify-items: center;
 	}
 
 	#header-left {
@@ -32,9 +34,11 @@
 	}
 
 	#main-menu-button {
-		width: 1.6em;
+		width: 3.1em;
+		height: var(--header-height);
 		padding: 0.3em 1em 0.3em 0.5em;
 		cursor: pointer;
+		box-sizing: border-box;
 	}
 
 	.menu-line {
@@ -47,13 +51,10 @@
 
 	#header-middle {
 		grid-column-start: 2;
-		justify-self: center;
-		padding: 0.3em 1em 0.3em 1em;
 	}
 
 	#header-right {
 		grid-column-start: 3;
-		padding: 0.3em 1em 0.3em 1em;
 		justify-self: right;
 	}
 </style>
