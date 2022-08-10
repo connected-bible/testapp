@@ -2,6 +2,7 @@
 	import '../app.css';
 	import Header from '$lib/components/Header.svelte';
 	import { onMount } from 'svelte';
+	import ContentGrid from '$lib/components/Grid.svelte';
 
 	function toggleMenu() {
 		const mnu = e$('menu-body');
@@ -70,7 +71,8 @@
 			<div>Menu&nbsp;Body</div>
 			<div>Menu&nbsp;Body</div>
 		</div>
-		<div id="content-grid">
+		<ContentGrid />
+		<!-- div id="content-grid">
 			<div id="content-cell">
 				<div
 					class="content"
@@ -146,7 +148,7 @@
 				</div>
 				<div id="content-footer">&copy; Connected Bible 2022</div>
 			</div>
-		</div>
+		</div -->
 	</main>
 	<footer>
 		<div id="view-tabs">
@@ -214,35 +216,6 @@
 		margin: 0;
 		padding: 5px 20px 5px 10px;
 		overflow: auto;
-	}
-
-	#content-grid {
-		grid-area: 1 / 2 / 1 / 3;
-		justify-self: center;
-		color: var(--text-color);
-		margin: 0;
-		padding: 0;
-		overflow: auto;
-		display: grid;
-		grid-template-rows: 1fr;
-		grid-template-columns: auto 1fr auto;
-		width: 100%;
-	}
-
-	#content-cell {
-		grid-area: 1 / 2 / 1 / 3;
-		justify-self: center;
-		margin: 0;
-	}
-
-	.content {
-		max-width: 800px;
-		margin: 5px 15px;
-	}
-
-	#content-footer {
-		margin: 10px;
-		text-align: center;
 	}
 
 	#view-tabs {

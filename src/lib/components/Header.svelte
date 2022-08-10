@@ -6,7 +6,6 @@
 </script>
 
 <!-- #region HTML -->
-
 <nav>
 	<!-- #region HTML -->
 	<div id="header-left">
