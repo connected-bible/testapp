@@ -12,6 +12,10 @@
 	function toggleSection() {
 		dispatch('toggle', !expanded);
 	}
+
+	function addTab() {
+		dispatch('addTab');
+	}
 </script>
 
 <div class="section" style={`grid-row-start:${gridRowStart}`}>
@@ -19,28 +23,27 @@
 		<div on:click={toggleSection} class={expanded ? 'chevron bottom' : 'chevron'} />
 		<div>{title}</div>
 	</div>
-	<div class="section-body" style:display={expanded ? 'block' : 'none'}>
-		<div class="tabs">
-			{#each tabs as tab, index}
-				<div class={index == tabIndex ? 'tab tab-active' : 'tab'} on:click={() => (tabIndex = index)}>{tab.title ?? tab.reference}</div>
-			{/each}
-		</div>
-		<div class="tab-content-container">
-			{#each tabs as tab, index}
-				<div class="tab-content" style={`display:${index == tabIndex ? 'block' : 'none'}`}>{tab.content}</div>
-			{/each}
-		</div>
+	<div class="tabs" style:display={expanded ? 'flex' : 'none'}>
+		{#each tabs as tab, index}
+			<div class={index == tabIndex ? 'tab tab-active' : 'tab'} on:click={() => (tabIndex = index)}>{tab.title ?? tab.reference}</div>
+		{/each}
+		<div class="tab-plus" on:click={addTab}>+</div>
+	</div>
+	<div class="tab-content-container" style:display={expanded ? 'block' : 'none'}>
+		{#each tabs as tab, index}
+			<div class="tab-content" style={`display:${index == tabIndex ? 'block' : 'none'}`}>{tab.content}</div>
+		{/each}
 	</div>
 </div>
 
 <style>
 	.section {
 		background-color: white;
-		outline: 1px solid black;
+		border: 1px solid gray;
 		border-radius: 6px;
-		overflow: hidden;
+		overflow: auto;
 		display: grid;
-		grid-template-rows: min-content 1fr;
+		grid-template-rows: min-content min-content 1fr;
 	}
 
 	.chevron::before {
@@ -82,10 +85,10 @@
 	.tabs {
 		display: flex;
 		flex-direction: row;
-		overflow-x: auto;
+		overflow: hidden;
 		background-color: gray;
 		color: white;
-		grid-row-start: 1;
+		grid-row-start: 2;
 	}
 
 	.tab {
@@ -101,13 +104,12 @@
 		cursor: pointer;
 	}
 
-	.tab-active {
+	.tab.tab-active {
 		background-color: #1e1e1e;
 	}
 
 	.tab-content-container {
-		grid-row-start: 2;
-		height: 100%;
+		grid-row-start: 3;
 		overflow: auto;
 	}
 
@@ -115,14 +117,24 @@
 		color: var(--text-color);
 		padding: 6px;
 		box-sizing: border-box;
+		overflow: auto;
 	}
 
-	.section-body {
-		display: grid;
-		grid-template-rows: min-content 1fr;
-		overflow: hidden;
-		grid-row-start: 2;
-		height: 100%;
-		background-color: aqua;
+	.tab-plus {
+		border-radius: 50%;
+		background-color: transparent;
+		cursor: pointer;
+		padding: 0;
+		height: 22px;
+		width: 22px;
+		line-height: 12px;
+		color: black;
+		font-size: 1.8em;
+		margin: 0 0 0 10px;
+		padding: 3px 0 0 3px;
+	}
+
+	.tab-plus:hover {
+		background-color: silver;
 	}
 </style>

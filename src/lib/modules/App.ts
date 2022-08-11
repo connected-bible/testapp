@@ -11,7 +11,6 @@ export type LayoutColumn = {
 
 export type LayoutSection = {
 	title: string;
-	gridArea: string;
 	tabs: LayoutTab[];
 	tabIndex: number;
 	expanded: boolean;
