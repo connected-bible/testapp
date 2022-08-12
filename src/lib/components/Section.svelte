@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { flip } from 'svelte/animate';
 	import { createEventDispatcher } from 'svelte';
 	import type { LayoutTab } from '$lib/modules/App';
+	import { Draggable } from '$lib/modules/Draggable';
 	export let title: string;
 	export let tabs: LayoutTab[];
 	export let tabIndex: number;
@@ -16,6 +18,24 @@
 	function addTab() {
 		dispatch('addTab');
 	}
+
+	function deleteTab(e: MouseEvent, index: number) {
+		e.cancelBubble = true;
+		e.preventDefault();
+		dispatch('deleteTab', index);
+	}
+
+	function clickTab(index: number) {
+		tabIndex = index;
+		dispatch('clickTab', tabIndex);
+	}
+
+	function showTabClose(e: MouseEvent, visible: boolean) {
+		if (!e || !e.target || !(e.target as HTMLElement).children) return;
+		const button: HTMLElement = (e.target as HTMLElement).children[1] as HTMLElement;
+		if (!button) return;
+		button.style.visibility = visible ? 'visible' : 'hidden';
+	}
 </script>
 
 <div class="section" style={`grid-row-start:${gridRowStart}`}>
@@ -23,13 +43,31 @@
 		<div on:click={toggleSection} class={expanded ? 'chevron bottom' : 'chevron'} />
 		<div>{title}</div>
 	</div>
-	<div class="tabs" style:display={expanded ? 'flex' : 'none'}>
-		{#each tabs as tab, index}
-			<div class={index == tabIndex ? 'tab tab-active' : 'tab'} on:click={() => (tabIndex = index)}>{tab.title ?? tab.reference}</div>
+	<div class="tabs" style={`display:${expanded ? 'flex' : 'none'};`}>
+		{#each tabs as tab, index (index)}
+			<div
+				class="tab"
+				class:tab-active={index == tabIndex}
+				on:mouseenter={(e) => showTabClose(e, true)}
+				on:mouseleave={(e) => showTabClose(e, false)}
+				on:click={() => clickTab(index)}
+				style={`width:${Math.trunc(100 / tabs.length)}%`}
+				animate:flip
+				draggable={true}
+				on:dragstart={(event) => Draggable.dragstart(event, index)}
+				on:drop|preventDefault={(event) => Draggable.drop(event, tabs, index)}
+				on:dragover|preventDefault
+				on:dragenter={() => (Draggable.hovering = index)}
+				class:multi-trans-item-active={Draggable.hovering === index}
+			>
+				<div class="tab-label">{tab.title ?? tab.reference}</div>
+				<div class="tab-close" style="visibility: hidden;" on:click={(e) => deleteTab(e, index)}>&#10006;</div>
+			</div>
 		{/each}
+
 		<div class="tab-plus" on:click={addTab}>+</div>
 	</div>
-	<div class="tab-content-container" style:display={expanded ? 'block' : 'none'}>
+	<div class="tab-content-container" style:display={expanded ? 'grid' : 'none'}>
 		{#each tabs as tab, index}
 			<div class="tab-content" style={`display:${index == tabIndex ? 'block' : 'none'}`}>{tab.content}</div>
 		{/each}
@@ -83,25 +121,40 @@
 	}
 
 	.tabs {
-		display: flex;
-		flex-direction: row;
-		overflow: hidden;
+		overflow-x: auto;
+		overflow-y: hidden;
 		background-color: gray;
 		color: white;
 		grid-row-start: 2;
 	}
 
 	.tab {
+		min-width: 60px;
+		max-width: 170px;
+		box-sizing: border-box;
+		padding: 2px 8px;
+		background-color: #606060; /*#2d2d2d*/
+		border-right: 2px solid #1e1e1e;
+		cursor: pointer;
+		display: grid;
+		grid-template-columns: 1fr min-content;
+	}
+
+	.tab-label {
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		min-width: 100px;
-		max-width: 180px;
-		box-sizing: border-box;
-		padding: 2px 8px;
-		background-color: #2d2d2d;
-		border-right: 2px solid #1e1e1e;
-		cursor: pointer;
+	}
+
+	.tab-close {
+		color: white;
+		border-radius: 4px;
+		padding: 0 4px;
+	}
+
+	.tab-close:hover {
+		background-color: red;
+		color: white;
 	}
 
 	.tab.tab-active {
@@ -127,11 +180,11 @@
 		padding: 0;
 		height: 22px;
 		width: 22px;
-		line-height: 12px;
+		line-height: 14px;
 		color: black;
-		font-size: 1.8em;
-		margin: 0 0 0 10px;
-		padding: 3px 0 0 3px;
+		font-size: 1.95em;
+		margin: 0 10px;
+		padding: 0;
 	}
 
 	.tab-plus:hover {

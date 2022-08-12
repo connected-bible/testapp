@@ -1,7 +1,7 @@
 <script lang="ts">
 	import ContentSection from './Section.svelte';
 	import type { Layout, LayoutColumn, LayoutSection } from '$lib/modules/App';
-	import { add_attribute } from 'svelte/internal';
+	import { select_options } from 'svelte/internal';
 
 	const longString =
 		'Thus the heavens and the earth were finished, and all the host of them. And on the seventh day God finished his work that he had done, and he rested on the seventh day from all his work that he had done. Thus the heavens and the earth were finished, and all the host of them. And on the seventh day God finished his work that he had done, and he rested on the seventh day from all his work that he had done.';
@@ -13,9 +13,9 @@
 					{
 						title: 'Jeffrey',
 						tabs: [
-							{ reference: 'Gen-1', content: 'Jeffrey is a very interesting code monkey.' },
+							{ title: 'Creation of the World', reference: 'Gen-1', content: 'Jeffrey is a very interesting code monkey.' },
 							{ reference: 'Gen-2', content: longString },
-							{ reference: 'Gen-3', content: longString }
+							{ title: 'Fall of Mankind', reference: 'Gen-3', content: longString.substring(longString.length - 100, 100) + longString.substring(0, longString.length - 100) }
 						],
 						tabIndex: 2,
 						expanded: true
@@ -31,21 +31,17 @@
 		]
 	};
 
-	// const splitter: Splitter = { columns: ['1/2/4/3'], rows: ['2/3/3/4'] };
-
 	function getTemplateStyle(items: LayoutColumn[] | LayoutSection[], type: 'columns' | 'sections'): string {
 		const style: string[] = [];
 		for (let i = 0; i < items.length; i++) {
 			style.push(type == 'columns' ? '1fr' : (items[i] as LayoutSection).expanded ? '1fr' : 'min-content');
 			if (i < items.length - 1) style.push('min-content');
 		}
-		console.log(`Grid template (${type}): ${style.join(' ')}`);
 		return style.join(' ');
 	}
 
-	function refreshLayout(section: LayoutSection, e: { detail: boolean }) {
-		// layout.columns[column].sections[section].expanded = e.detail;
-		section.expanded = e.detail;
+	function refreshLayout(section: LayoutSection, expanded: boolean) {
+		section.expanded = expanded;
 		layout = layout;
 	}
 
@@ -55,23 +51,36 @@
 		layout = layout;
 	}
 
-	/*
-	function removeTab(section: LayoutSection, tabIndex: number) {
-		if (section.tabs.length == 1) {
-			const removeSection = confirm('Removing this tab will remove the entire section. Remove this section?');
-			if (!removeSection) return;
-		}
-		section.tabs.splice(tabIndex);
-		if (section.tabIndex == tabIndex)
+	function deleteTab(columnIndex: number, sectionIndex: number, tabIndex: number) {
+		const column = layout.columns[columnIndex];
+		const section = column.sections[sectionIndex];
+		if (section.tabIndex > tabIndex || section.tabIndex == section.tabs.length - 1) section.tabIndex = section.tabIndex - 1;
+		section.tabs.splice(tabIndex, 1);
+		if (section.tabs.length == 0) column.sections.splice(sectionIndex, 1);
+		if (column.sections.length == 0) layout.columns.splice(columnIndex, 1);
+		layout = layout;
 	}
-	*/
+
+	function clickTab(section: LayoutSection, tabIndex: number) {
+		section.tabIndex = tabIndex;
+	}
 </script>
 
 <div id="content-grid" style={`grid-template-columns:${getTemplateStyle(layout.columns, 'columns')}`}>
 	{#each layout.columns as column, columnIndex}
 		<div class="grid-column" style={`grid-template-rows:${getTemplateStyle(column.sections, 'sections')};grid-column-start:${columnIndex * 2 + 1}`}>
 			{#each column.sections as section, sectionIndex}
-				<ContentSection on:toggle={(e) => refreshLayout(section, e)} on:addTab={() => addTab(section)} title={section.title} tabs={section.tabs} gridRowStart={sectionIndex * 2 + 1} tabIndex={section.tabIndex} expanded={section.expanded} />
+				<ContentSection
+					on:toggle={(e) => refreshLayout(section, e.detail)}
+					on:addTab={() => addTab(section)}
+					on:deleteTab={(e) => deleteTab(columnIndex, sectionIndex, e.detail)}
+					on:clickTab={(e) => clickTab(section, e.detail)}
+					title={section.title}
+					tabs={section.tabs}
+					gridRowStart={sectionIndex * 2 + 1}
+					tabIndex={section.tabIndex}
+					expanded={section.expanded}
+				/>
 				{#if sectionIndex < column.sections.length - 1}
 					<div class="split-row" style={`grid-row-start:${sectionIndex * 2 + 2}`} />
 				{/if}
