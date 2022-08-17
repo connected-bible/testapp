@@ -1,8 +1,12 @@
 <script lang="ts">
 	import '../../app.css';
-	import { globalApp } from '../modules/App';
 	import type { App } from '../modules/App';
-	let app: App = $globalApp as App;
+
+	let app: App;
+
+	export function setApp(a: App) {
+		app = a;
+	}
 </script>
 
 <!-- #region HTML -->

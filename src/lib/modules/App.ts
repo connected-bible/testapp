@@ -1,31 +1,37 @@
-import { writable } from 'svelte/store';
-import type Header from '../components/Header.svelte';
+import type Header from '$lib/components/Header.svelte';
+import type Layout from '$lib/components/Layout.svelte';
 
-export type Layout = {
-	columns: LayoutColumn[];
+export type LayoutData = {
+	columns: LayoutColumnData[];
 };
 
-export type LayoutColumn = {
-	sections: LayoutSection[];
+export type LayoutColumnData = {
+	sections: LayoutSectionData[];
 };
 
-export type LayoutSection = {
+export type LayoutSectionData = {
 	title: string;
-	tabs: LayoutTab[];
-	tabIndex: number;
+	tabs: LayoutTabData[];
+	activeTab: number;
 	expanded: boolean;
 };
 
-export type LayoutTab = {
+export type LayoutTabData = {
 	title?: string;
 	reference: string;
 	content: string;
 };
 
 export class App {
-	private _header: Header | null = null;
+	public header: Header;
+	public layout: Layout;
 
-	constructor() {}
+	constructor(header: Header, layout: Layout) {
+		this.header = header;
+		this.layout = layout;
+		this.header.setApp(this);
+		this.layout.setApp(this);
+	}
 
 	public showMenu(visible: boolean) {
 		this.e$('menu')!.style.display = visible ? 'block' : 'none';
@@ -39,6 +45,7 @@ export class App {
 		return document.getElementById(name);
 	}
 
+	/*
 	public setComponent(type: 'header' | 'body' | 'footer', component: any) {
 		switch (type) {
 			case 'header':
@@ -47,6 +54,5 @@ export class App {
 			case 'body':
 		}
 	}
+	*/
 }
-
-export const globalApp = writable(new App());

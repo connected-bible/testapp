@@ -1,8 +1,13 @@
 <script lang="ts">
 	import '../app.css';
+	import { App } from '$lib/modules/App';
 	import Header from '$lib/components/Header.svelte';
 	import { onMount } from 'svelte';
-	import ContentGrid from '$lib/components/Grid.svelte';
+	import Layout from '$lib/components/Layout.svelte';
+
+	let app: App;
+	let layout: Layout;
+	let header: Header;
 
 	function toggleMenu() {
 		const mnu = e$('menu-body');
@@ -21,12 +26,13 @@
 		};
 		window.addEventListener('resize', setDocumentHeight);
 		setDocumentHeight();
+		app = new App(header, layout);
 	});
 </script>
 
 <div id="layout">
 	<header>
-		<Header />
+		<Header bind:this={header} />
 	</header>
 	<main>
 		<div id="menu" style="display:none;">
@@ -71,7 +77,7 @@
 			<div>Menu&nbsp;Body</div>
 			<div>Menu&nbsp;Body</div>
 		</div>
-		<ContentGrid />
+		<Layout bind:this={layout} />
 		<!-- div id="content-grid">
 			<div id="content-cell">
 				<div
