@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-	import { flip } from 'svelte/animate';
+	// import { createEventDispatcher } from 'svelte';
 	import type { LayoutTabData } from '$lib/modules/App';
+	import { flip } from 'svelte/animate';
 	import { Draggable } from '$lib/modules/Draggable';
 	import type { DropObject } from '$lib/modules/Draggable';
 	import type Layout from '$lib/components/Layout.svelte';
@@ -11,13 +11,11 @@
 	export let activeTab: number;
 	export let expanded: boolean;
 	export let layout: Layout;
-	const dispatch = createEventDispatcher();
+	let titleDiv: HTMLDivElement[] = [];
+	let titleInput: HTMLInputElement[] = [];
+	let renaming: boolean = false;
 
-	/*
-    export function setLayout(l: Layout) {
-        layout = l;
-    }
-    */
+	// const dispatch = createEventDispatcher();
 
 	function addTab() {
 		layout.addTab(columnIndex, sectionIndex);
@@ -35,6 +33,7 @@
 	}
 
 	function showTabClose(e: MouseEvent, visible: boolean) {
+		if (renaming) return;
 		if (!e || !e.target || !(e.target as HTMLElement).children) return;
 		const button: HTMLElement = (e.target as HTMLElement).children[1] as HTMLElement;
 		if (!button) return;
@@ -42,15 +41,36 @@
 	}
 
 	function dragTab(e: DragEvent, tabIndex: number) {
+		if (renaming) e.preventDefault();
 		e.cancelBubble = true;
 		Draggable.dragStart(e, { componentType: 'tab', targetTypes: ['tab', 'section', 'layout-drop'], columnIndex: columnIndex, sectionIndex: sectionIndex, tabIndex: tabIndex });
 	}
 
 	function dropOnTab(e: DragEvent, tabIndex: number) {
 		e.cancelBubble = true;
-		const dragObj = Draggable.getDragSource(e);
+		const dragObj = Draggable.dragSource;
 		if (!dragObj) return;
 		layout.drop(dragObj, { componentType: 'tab', columnIndex: columnIndex, sectionIndex: sectionIndex, tabIndex: tabIndex } as DropObject);
+	}
+
+	function editTitle(tabIndex: number) {
+		renaming = true;
+		const tab = tabs[tabIndex];
+		const title = tab.title ?? tab.reference;
+		titleDiv[tabIndex].style.display = 'none';
+		const input = titleInput[tabIndex];
+		input.value = title;
+		input.style.display = 'block';
+		input.focus();
+		input.select();
+	}
+
+	function changeTitle(tabIndex: number, title: string) {
+		if (!title) title = '(Untitled)';
+		titleInput[tabIndex].style.display = 'none';
+		titleDiv[tabIndex].style.display = 'block';
+		layout.changeTabTitle(columnIndex, sectionIndex, tabIndex, title);
+		renaming = false;
 	}
 </script>
 
@@ -66,17 +86,20 @@
 			animate:flip
 			draggable={true}
 			on:dragstart={(e) => dragTab(e, index)}
+			on:dragend={() => layout.endDrag()}
 			on:drop|preventDefault={(e) => dropOnTab(e, index)}
-			on:dragover|preventDefault
-			on:dragenter={() => (Draggable.hovering = index)}
-			on:dragleave={() => (Draggable.hovering = null)}
-			class:multi-trans-item-active={Draggable.hovering === index}
+			on:dragover|preventDefault={(e) => (e.cancelBubble = true)}
+			on:dragenter={(e) => {
+				e.cancelBubble = true;
+				layout.hideDragMarkers();
+			}}
+			on:dragleave={(e) => (e.cancelBubble = true)}
 		>
-			<div class="tab-label">{tab.title ?? tab.reference}</div>
+			<div style="display: block;" bind:this={titleDiv[index]} class="tab-title" on:dblclick={() => editTitle(index)}>{tab.title ?? tab.reference}</div>
+			<input style="display: none;" bind:this={titleInput[index]} type="text" class="tab-title-input" on:change={() => changeTitle(index, titleInput[index].value)} on:blur={() => changeTitle(index, titleInput[index].value)} />
 			<div class="tab-close" style="visibility: hidden;" on:click={(e) => deleteTab(e, index)}>&#10006;</div>
 		</div>
 	{/each}
-
 	<div class="tab-plus" on:click={addTab}>+</div>
 </div>
 
@@ -86,7 +109,6 @@
 		overflow-y: hidden;
 		background-color: gray;
 		color: white;
-		grid-row-start: 3;
 	}
 
 	.tab {
@@ -101,16 +123,25 @@
 		grid-template-columns: 1fr min-content;
 	}
 
-	.tab-label {
+	.tab-title {
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		grid-column-start: 1;
+	}
+
+	.tab-title-input {
+		grid-column-start: 1;
+		width: 100%;
+		border: none;
+		background-color: white;
 	}
 
 	.tab-close {
 		color: white;
 		border-radius: 4px;
 		padding: 0 4px;
+		grid-column-start: 2;
 	}
 
 	.tab-close:hover {

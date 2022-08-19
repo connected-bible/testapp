@@ -9,6 +9,10 @@
 
 	let app: App;
 	let layout: Layout;
+	let layoutDiv: HTMLDivElement;
+	let dragHorizontal: HTMLDivElement;
+	let dragVertical: HTMLDivElement;
+	let lastDragOver: DropObject;
 
 	export function setApp(a: App) {
 		app = a;
@@ -96,13 +100,37 @@
 		data = data;
 	}
 
-	export function drop(dragObj: DragObject, dropObj: DropObject) {
+	export function changeSectionTitle(columnIndex: number, sectionIndex: number, title: string) {
+		const column = data.columns[columnIndex];
+		if (!column) return;
+		const section = column.sections[sectionIndex];
+		if (!section) return;
+		section.title = title;
+		data = data;
+	}
+
+	export function changeTabTitle(columnIndex: number, sectionIndex: number, tabIndex: number, title: string) {
+		const column = data.columns[columnIndex];
+		if (!column) return;
+		const section = column.sections[sectionIndex];
+		if (!section) return;
+		const tab = section.tabs[tabIndex];
+		if (!tab) return;
+		tab.title = title;
+		data = data;
+	}
+
+	export function drop(dragObj: DragObject | null, dropObj: DropObject | null) {
+		// Bail out if we don't have references to drag / drop objects
+		if (!dragObj || !dropObj) return;
+
+		// Tab drag
 		if (dragObj.componentType == 'tab') {
-			if (dropObj.componentType == 'section') {
+			if (dropObj.componentType == 'section' && !dropObj.direction) {
 				const newDropObj: DropObject = { componentType: 'tab', columnIndex: dropObj.columnIndex, sectionIndex: dropObj.sectionIndex, tabIndex: data.columns[dropObj.columnIndex].sections[dropObj.sectionIndex].tabs.length };
 				moveTab(dragObj, newDropObj);
-			} else if (dropObj.componentType == 'layout-drop') {
-				const newSection: LayoutSectionData = { title: '(New)', tabs: [], activeTab: 0, expanded: true };
+			} else if (dropObj.componentType == 'section') {
+				const newSection: LayoutSectionData = { title: '(Untitled)', tabs: [], activeTab: 0, expanded: true };
 				const dragSection = data.columns[dragObj.columnIndex].sections[dragObj.sectionIndex];
 				const dragTab = dragSection.tabs[dragObj.tabIndex];
 				newSection.tabs.push(dragTab);
@@ -137,6 +165,48 @@
 			}
 		}
 
+		// Section drag
+		else if (dragObj.componentType == 'section') {
+			const dragColumn = data.columns[dragObj.columnIndex];
+			const dragSection = dragColumn.sections[dragObj.sectionIndex];
+			const direction = dropObj.direction;
+			if (!direction) return;
+			const layoutDropSection = direction == 'top' || direction == 'bottom';
+			const layoutDropColumn = direction == 'left' || direction == 'right';
+
+			// Insert the section to drop column
+			if (layoutDropSection) {
+				// If drag column is same as drop column, just reorder the section
+				if (dragObj.columnIndex == dropObj.columnIndex) {
+					dragColumn.sections = Draggable.changeIndex(dragColumn.sections, dragObj.sectionIndex, dropObj.sectionIndex);
+				}
+
+				// Otherwise splice it into the drop column, remove if from the drag column
+				else {
+					const spliceIndex = direction == 'top' ? dropObj.sectionIndex : dropObj.sectionIndex + 1;
+					data.columns[dropObj.columnIndex].sections.splice(spliceIndex, 0, dragSection);
+					dragColumn.sections.splice(dragObj.sectionIndex, 1);
+				}
+
+				// Create a new column, insert the drag section, remove the drag section from old column
+			} else if (layoutDropColumn) {
+				const newColumn: LayoutColumnData = { sections: [dragSection] };
+				const spliceIndex = direction == 'left' ? dropObj.columnIndex : dropObj.columnIndex + 1;
+				data.columns.splice(spliceIndex, 0, newColumn);
+				dragColumn.sections.splice(dragObj.sectionIndex, 1);
+			}
+
+			// Clean up empty columns
+			for (let c = data.columns.length - 1; c >= 0; c--) {
+				if (data.columns[c].sections.length == 0) {
+					data.columns.splice(c, 1);
+				}
+			}
+		}
+
+		// Reset drag objects
+		endDrag();
+
 		// Refresh the layout
 		data = data;
 	}
@@ -151,13 +221,44 @@
 		dropSection.activeTab = dropObj.tabIndex >= dropSection.tabs.length ? dropSection.tabs.length - 1 : dropObj.tabIndex;
 		if (dragSection !== dropSection) onDeleteTab(dragObj.columnIndex, dragObj.sectionIndex, dragObj.tabIndex);
 	}
+
+	export function dragOverSection(dragOverObj: DropObject, sectionDiv: HTMLDivElement) {
+		const direction = dragOverObj.direction;
+		if (direction == 'left' || direction == 'right') {
+			dragVertical.style.top = `${layoutDiv.offsetTop}px`;
+			dragVertical.style.left = `${direction == 'left' ? sectionDiv.offsetLeft - 6 : sectionDiv.offsetLeft + sectionDiv.offsetWidth}px`;
+			dragVertical.style.height = `${layoutDiv.offsetHeight}px`;
+		} else if (direction == 'top' || direction == 'bottom') {
+			dragHorizontal.style.top = `${direction == 'top' ? sectionDiv.offsetTop - 6 : sectionDiv.offsetTop + sectionDiv.offsetHeight}px`;
+			dragHorizontal.style.left = `${sectionDiv.offsetLeft - 4}px`;
+			dragHorizontal.style.width = `${sectionDiv.offsetWidth + 8}px`;
+		}
+		dragHorizontal.style.display = direction == 'top' || direction == 'bottom' ? 'grid' : 'none';
+		dragVertical.style.display = direction == 'left' || direction == 'right' ? 'grid' : 'none';
+		lastDragOver = dragOverObj;
+	}
+
+	export function endDrag() {
+		hideDragMarkers();
+		Draggable.hovering = null;
+		Draggable.dragSource = null;
+	}
+
+	export function hideDragMarkers() {
+		dragHorizontal.style.display = 'none';
+		dragVertical.style.display = 'none';
+	}
+
+	function dropOnMarker() {
+		drop(Draggable.dragSource, lastDragOver);
+	}
 </script>
 
-<div id="layout" style={`grid-template-columns:${getTemplateStyle(data.columns, 'columns')}`}>
+<div id="layout" bind:this={layoutDiv} style={`grid-template-columns:${getTemplateStyle(data.columns, 'columns')}`}>
 	{#each data.columns as column, columnIndex}
-		<LayoutColumn templateRows={getTemplateStyle(column.sections, 'sections')} {columnIndex} {layout} columnStart={columnIndex * 2 + 1}>
+		<LayoutColumn templateRows={getTemplateStyle(column.sections, 'sections')} columnStart={columnIndex * 2 + 1}>
 			{#each column.sections as section, sectionIndex}
-				<LayoutSection {...section} {sectionIndex} {columnIndex} {layout} gridRowStart={sectionIndex * 2 + 1} isLastSection={sectionIndex == column.sections.length - 1} />
+				<LayoutSection {...section} {sectionIndex} {columnIndex} {layout} gridRowStart={sectionIndex * 2 + 1} />
 				{#if sectionIndex < column.sections.length - 1}
 					<div class="split-row" style={`grid-row-start:${sectionIndex * 2 + 2}`} />
 				{/if}
@@ -167,9 +268,76 @@
 			<div class="split-col" style={`grid-column-start:${columnIndex * 2 + 2}`} />
 		{/if}
 	{/each}
+	<div class="drag-marker drag-horizontal" bind:this={dragHorizontal} style="display: none" on:drop|preventDefault={dropOnMarker} on:dragover|preventDefault on:dragenter|preventDefault on:dragleave|preventDefault>
+		<div class="drag-marker-left">&nbsp;</div>
+		<div class="drag-marker-right">&nbsp;</div>
+	</div>
+	<div class="drag-marker drag-vertical" bind:this={dragVertical} style="display: none" on:drop|preventDefault={dropOnMarker} on:dragover|preventDefault on:dragenter|preventDefault on:dragleave|preventDefault>
+		<div class="drag-marker-top">&nbsp;</div>
+		<div class="drag-marker-bottom">&nbsp;</div>
+	</div>
 </div>
 
 <style>
+	.drag-marker {
+		position: absolute;
+		background-color: cornflowerblue;
+		display: grid;
+	}
+
+	.drag-horizontal {
+		height: 6px;
+		grid-template-columns: 1fr 1fr;
+		grid-template-rows: 1fr;
+	}
+
+	.drag-vertical {
+		width: 6px;
+		grid-template-rows: 1fr 1fr;
+		grid-template-columns: 1fr;
+	}
+
+	.drag-marker-left {
+		width: 0;
+		height: 0;
+		border-top: 10px solid transparent;
+		border-bottom: 10px solid transparent;
+		border-left: 10px solid red;
+		grid-column-start: 1;
+		margin-top: -7px;
+	}
+
+	.drag-marker-right {
+		width: 0;
+		height: 0;
+		border-top: 10px solid transparent;
+		border-bottom: 10px solid transparent;
+		border-right: 10px solid red;
+		grid-column-start: 3;
+		margin-top: -7px;
+	}
+
+	.drag-marker-top {
+		width: 0;
+		height: 0;
+		border-left: 10px solid transparent;
+		border-right: 10px solid transparent;
+		border-top: 10px solid red;
+		grid-row-start: 1;
+		margin-left: -7px;
+	}
+
+	.drag-marker-bottom {
+		width: 0;
+		height: 0;
+		border-left: 10px solid transparent;
+		border-right: 10px solid transparent;
+		border-bottom: 10px solid red;
+		grid-row-start: 3;
+		margin-left: -7px;
+		justify-self: end;
+	}
+
 	#layout {
 		grid-area: 1 / 2 / 1 / 3;
 		justify-self: center;

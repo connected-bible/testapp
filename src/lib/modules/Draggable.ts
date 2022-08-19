@@ -1,29 +1,23 @@
 export interface DragObject {
-	componentType: 'section' | 'tab';
+	componentType: string;
 	targetTypes: string[];
 	[key: string]: any;
 }
 
 export interface DropObject {
-	componentType: 'section' | 'tab' | 'layout-drop';
+	componentType: string;
 	[key: string]: any;
 }
 
 export class Draggable {
-	static hovering: any = false;
-
-	static getDragSource(event: DragEvent): DragObject | null {
-		if (!event || !event.dataTransfer) return null;
-		event.dataTransfer.dropEffect = 'none';
-		Draggable.hovering = null;
-		return JSON.parse(event.dataTransfer.getData('text/plain')) as DragObject;
-	}
+	static dragSource: DragObject | null = null;
+	static hovering: DropObject | null = null;
 
 	static dragStart(event: DragEvent, dragObj: DragObject, dragImage?: HTMLElement) {
 		if (!event || !event.dataTransfer) return;
 		event.dataTransfer.effectAllowed = 'move';
 		event.dataTransfer.dropEffect = 'move';
-		event.dataTransfer.setData('text/plain', JSON.stringify(dragObj));
+		Draggable.dragSource = dragObj;
 		if (dragImage) event.dataTransfer.setDragImage(dragImage, 0, 0);
 	}
 
