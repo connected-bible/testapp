@@ -15,8 +15,14 @@
 	let sectionDiv: HTMLDivElement;
 	let titleContainer: HTMLDivElement;
 	let titleDiv: HTMLDivElement;
+	let titleInput: HTMLInputElement;
+	let renaming: boolean = false;
 
 	function dragSection(e: DragEvent, columnIndex: number, sectionIndex: number) {
+		if (renaming) {
+			e.preventDefault();
+			return;
+		}
 		e.cancelBubble = true;
 		Draggable.dragStart(e, { componentType: 'section', targetTypes: ['section', 'layout-drop'], columnIndex: columnIndex, sectionIndex: sectionIndex } as DragObject, titleContainer);
 		const dragSource = Draggable.dragSource;
@@ -26,30 +32,24 @@
 		e.cancelBubble = true;
 		const dragObj = Draggable.dragSource;
 		if (!dragObj) return;
-		layout.drop(dragObj, { componentType: 'section', columnIndex: columnIndex, sectionIndex: sectionIndex, direction: getDragDirection(e, dragObj.componentType) } as DropObject);
+		layout.drop(dragObj, { componentType: 'section', columnIndex: columnIndex, sectionIndex: sectionIndex, direction: getDragDirection(e, dragObj.componentType), element: sectionDiv } as DropObject);
 	}
 
 	function editTitle() {
-		titleDiv.contentEditable = 'true';
-		const sel = window.getSelection();
-		const range = document.createRange();
-		range.setStart(titleDiv.childNodes[0], 0);
-		range.setEnd(titleDiv.childNodes[0], titleDiv.innerText.length);
-		sel?.removeAllRanges();
-		sel?.addRange(range);
+		renaming = true;
+		titleDiv.style.display = 'none';
+		titleInput.value = title;
+		titleInput.style.display = 'block';
+		titleInput.focus();
+		titleInput.select();
 	}
 
 	function changeTitle(title: string) {
-		if (!title) {
-			title = '(Untitled)';
-			titleDiv.innerText = title;
-		} else if (title.indexOf('\n') != 0) {
-			title = title.replace(/\n/g, ' ');
-			titleDiv.innerText = title;
-		}
+		if (!title) title = '(Untitled)';
+		titleInput.style.display = 'none';
+		titleDiv.style.display = 'block';
 		layout.changeSectionTitle(columnIndex, sectionIndex, title);
-		titleDiv.contentEditable = 'false';
-		titleDiv.scrollLeft = 0;
+		renaming = false;
 	}
 
 	export function setActiveTab(tabIndex: number) {
@@ -63,16 +63,16 @@
 		}
 		const dragSource = Draggable.dragSource;
 		if (!dragSource) return;
-		Draggable.hovering = { componentType: 'section', columnIndex: columnIndex, sectionIndex: sectionIndex, direction: getDragDirection(e, dragSource.componentType) };
-		layout.dragOverSection(Draggable.hovering as DropObject, sectionDiv);
+		Draggable.hovering = { componentType: 'section', columnIndex: columnIndex, sectionIndex: sectionIndex, direction: getDragDirection(e, dragSource.componentType), element: sectionDiv };
+		layout.dragOverSection(Draggable.hovering as DropObject);
 	}
 
-	function getDragDirection(e: DragEvent, componentType: string): 'left' | 'right' | 'top' | 'bottom' | '' {
+	function getDragDirection(e: DragEvent, componentType: string): 'left' | 'right' | 'top' | 'bottom' | 'none' {
 		const x = (e.clientX - sectionDiv.offsetLeft) / sectionDiv.offsetWidth;
 		const y = (e.clientY - sectionDiv.offsetTop) / sectionDiv.offsetHeight;
 		const xGap = x < 0.5 ? x : 1 - x;
 		const yGap = y < 0.5 ? y : 1 - y;
-		if (componentType == 'tab' && xGap > 0.07 && yGap > 0.07) return '';
+		if (componentType == 'tab' && xGap > 0.1 && yGap > 0.1) return 'none';
 		let direction: 'left' | 'right' | 'top' | 'bottom';
 		if (xGap < yGap) {
 			direction = x < 0.5 ? 'left' : 'right';
@@ -94,7 +94,8 @@
 >
 	<div class="title" bind:this={titleContainer} draggable={true} on:dragstart={(e) => dragSection(e, columnIndex, sectionIndex)} on:dragend={() => layout.endDrag()}>
 		<div on:click={() => layout.toggleSection(columnIndex, sectionIndex, !expanded)} class={expanded ? 'chevron bottom' : 'chevron'} />
-		<div class="title-text" bind:this={titleDiv} on:dblclick={editTitle} on:blur={() => changeTitle(titleDiv.innerText)}>{title}</div>
+		<div style="display: block;" class="title-text" bind:this={titleDiv} on:dblclick={editTitle} on:blur={() => changeTitle(titleDiv.innerText)}>{title}</div>
+		<input style="display: none;" class="title-input" bind:this={titleInput} type="text" on:change={() => changeTitle(titleInput.value)} on:blur={() => changeTitle(titleInput.value)} />
 	</div>
 	<LayoutTabs {columnIndex} {sectionIndex} {tabs} {activeTab} {expanded} {layout} />
 	<div class="tab-content-container" style:display={expanded ? 'grid' : 'none'}>
@@ -113,6 +114,10 @@
 		display: grid;
 		grid-template-rows: min-content min-content 1fr;
 		grid-template-columns: 1fr;
+	}
+
+	.chevron {
+		grid-column-start: 1;
 	}
 
 	.chevron::before {
@@ -138,8 +143,8 @@
 	}
 
 	.title {
-		display: flex;
-		flex-direction: row;
+		display: grid;
+		grid-template-columns: min-content 1fr;
 		background-color: purple;
 		font-weight: bold;
 		color: white;
@@ -153,6 +158,15 @@
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		grid-column-start: 2;
+	}
+
+	.title-input {
+		width: 100%;
+		max-width: 250px;
+		border: none;
+		background-color: white;
+		grid-column-start: 2;
 	}
 
 	.tab-content-container {

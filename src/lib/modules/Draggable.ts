@@ -6,6 +6,7 @@ export interface DragObject {
 
 export interface DropObject {
 	componentType: string;
+	element: HTMLElement;
 	[key: string]: any;
 }
 

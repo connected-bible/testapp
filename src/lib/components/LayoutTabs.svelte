@@ -11,6 +11,7 @@
 	export let activeTab: number;
 	export let expanded: boolean;
 	export let layout: Layout;
+	let tabDiv: HTMLDivElement[] = [];
 	let titleDiv: HTMLDivElement[] = [];
 	let titleInput: HTMLInputElement[] = [];
 	let renaming: boolean = false;
@@ -35,13 +36,16 @@
 	function showTabClose(e: MouseEvent, visible: boolean) {
 		if (renaming) return;
 		if (!e || !e.target || !(e.target as HTMLElement).children) return;
-		const button: HTMLElement = (e.target as HTMLElement).children[1] as HTMLElement;
+		const button: HTMLElement = (e.target as HTMLElement).children[2] as HTMLElement;
 		if (!button) return;
 		button.style.visibility = visible ? 'visible' : 'hidden';
 	}
 
 	function dragTab(e: DragEvent, tabIndex: number) {
-		if (renaming) e.preventDefault();
+		if (renaming) {
+			e.preventDefault();
+			return;
+		}
 		e.cancelBubble = true;
 		Draggable.dragStart(e, { componentType: 'tab', targetTypes: ['tab', 'section', 'layout-drop'], columnIndex: columnIndex, sectionIndex: sectionIndex, tabIndex: tabIndex });
 	}
@@ -50,7 +54,7 @@
 		e.cancelBubble = true;
 		const dragObj = Draggable.dragSource;
 		if (!dragObj) return;
-		layout.drop(dragObj, { componentType: 'tab', columnIndex: columnIndex, sectionIndex: sectionIndex, tabIndex: tabIndex } as DropObject);
+		layout.drop(dragObj, { componentType: 'tab', columnIndex: columnIndex, sectionIndex: sectionIndex, tabIndex: tabIndex, element: tabDiv[tabIndex] } as DropObject);
 	}
 
 	function editTitle(tabIndex: number) {
@@ -77,6 +81,7 @@
 <div class="tabs" style={`display:${expanded ? 'flex' : 'none'};`}>
 	{#each tabs as tab, index (index)}
 		<div
+			bind:this={tabDiv[index]}
 			class="tab"
 			class:tab-active={index == activeTab}
 			on:mouseenter={(e) => showTabClose(e, true)}
@@ -113,7 +118,7 @@
 
 	.tab {
 		min-width: 60px;
-		max-width: 170px;
+		max-width: 210px;
 		box-sizing: border-box;
 		padding: 2px 8px;
 		background-color: #606060; /*#2d2d2d*/

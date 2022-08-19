@@ -10,8 +10,9 @@
 	let app: App;
 	let layout: Layout;
 	let layoutDiv: HTMLDivElement;
-	let dragHorizontal: HTMLDivElement;
-	let dragVertical: HTMLDivElement;
+	let dragHorizontalDiv: HTMLDivElement;
+	let dragVerticalDiv: HTMLDivElement;
+	let overlayDiv: HTMLDivElement;
 	let lastDragOver: DropObject;
 
 	export function setApp(a: App) {
@@ -126,8 +127,14 @@
 
 		// Tab drag
 		if (dragObj.componentType == 'tab') {
-			if (dropObj.componentType == 'section' && !dropObj.direction) {
-				const newDropObj: DropObject = { componentType: 'tab', columnIndex: dropObj.columnIndex, sectionIndex: dropObj.sectionIndex, tabIndex: data.columns[dropObj.columnIndex].sections[dropObj.sectionIndex].tabs.length };
+			if (dropObj.componentType == 'section' && dropObj.direction == 'none') {
+				const newDropObj: DropObject = {
+					componentType: 'tab',
+					columnIndex: dropObj.columnIndex,
+					sectionIndex: dropObj.sectionIndex,
+					tabIndex: data.columns[dropObj.columnIndex].sections[dropObj.sectionIndex].tabs.length,
+					element: dropObj.element
+				};
 				moveTab(dragObj, newDropObj);
 			} else if (dropObj.componentType == 'section') {
 				const newSection: LayoutSectionData = { title: '(Untitled)', tabs: [], activeTab: 0, expanded: true };
@@ -170,7 +177,7 @@
 			const dragColumn = data.columns[dragObj.columnIndex];
 			const dragSection = dragColumn.sections[dragObj.sectionIndex];
 			const direction = dropObj.direction;
-			if (!direction) return;
+			if (direction == 'none') return;
 			const layoutDropSection = direction == 'top' || direction == 'bottom';
 			const layoutDropColumn = direction == 'left' || direction == 'right';
 
@@ -222,31 +229,39 @@
 		if (dragSection !== dropSection) onDeleteTab(dragObj.columnIndex, dragObj.sectionIndex, dragObj.tabIndex);
 	}
 
-	export function dragOverSection(dragOverObj: DropObject, sectionDiv: HTMLDivElement) {
+	export function dragOverSection(dragOverObj: DropObject) {
 		const direction = dragOverObj.direction;
+		const sectionDiv = dragOverObj.element;
 		if (direction == 'left' || direction == 'right') {
-			dragVertical.style.top = `${layoutDiv.offsetTop}px`;
-			dragVertical.style.left = `${direction == 'left' ? sectionDiv.offsetLeft - 6 : sectionDiv.offsetLeft + sectionDiv.offsetWidth}px`;
-			dragVertical.style.height = `${layoutDiv.offsetHeight}px`;
+			dragVerticalDiv.style.top = `${layoutDiv.offsetTop}px`;
+			dragVerticalDiv.style.left = `${direction == 'left' ? sectionDiv.offsetLeft - 6 : sectionDiv.offsetLeft + sectionDiv.offsetWidth}px`;
+			dragVerticalDiv.style.height = `${layoutDiv.offsetHeight}px`;
 		} else if (direction == 'top' || direction == 'bottom') {
-			dragHorizontal.style.top = `${direction == 'top' ? sectionDiv.offsetTop - 6 : sectionDiv.offsetTop + sectionDiv.offsetHeight}px`;
-			dragHorizontal.style.left = `${sectionDiv.offsetLeft - 4}px`;
-			dragHorizontal.style.width = `${sectionDiv.offsetWidth + 8}px`;
+			dragHorizontalDiv.style.top = `${direction == 'top' ? sectionDiv.offsetTop - 6 : sectionDiv.offsetTop + sectionDiv.offsetHeight}px`;
+			dragHorizontalDiv.style.left = `${sectionDiv.offsetLeft - 4}px`;
+			dragHorizontalDiv.style.width = `${sectionDiv.offsetWidth + 8}px`;
+		} else if (direction == 'none') {
+			overlayDiv.style.top = `${sectionDiv.offsetTop}px`;
+			overlayDiv.style.left = `${sectionDiv.offsetLeft}px`;
+			overlayDiv.style.width = `${sectionDiv.offsetWidth}px`;
+			overlayDiv.style.height = `${sectionDiv.offsetHeight}px`;
 		}
-		dragHorizontal.style.display = direction == 'top' || direction == 'bottom' ? 'grid' : 'none';
-		dragVertical.style.display = direction == 'left' || direction == 'right' ? 'grid' : 'none';
+		dragHorizontalDiv.style.display = direction == 'top' || direction == 'bottom' ? 'grid' : 'none';
+		dragVerticalDiv.style.display = direction == 'left' || direction == 'right' ? 'grid' : 'none';
+		overlayDiv.style.display = direction == 'none' ? 'block' : 'none';
 		lastDragOver = dragOverObj;
 	}
 
 	export function endDrag() {
 		hideDragMarkers();
+		overlayDiv.style.display = 'none';
 		Draggable.hovering = null;
 		Draggable.dragSource = null;
 	}
 
 	export function hideDragMarkers() {
-		dragHorizontal.style.display = 'none';
-		dragVertical.style.display = 'none';
+		dragHorizontalDiv.style.display = 'none';
+		dragVerticalDiv.style.display = 'none';
 	}
 
 	function dropOnMarker() {
@@ -268,17 +283,27 @@
 			<div class="split-col" style={`grid-column-start:${columnIndex * 2 + 2}`} />
 		{/if}
 	{/each}
-	<div class="drag-marker drag-horizontal" bind:this={dragHorizontal} style="display: none" on:drop|preventDefault={dropOnMarker} on:dragover|preventDefault on:dragenter|preventDefault on:dragleave|preventDefault>
+	<div class="drag-marker drag-horizontal" bind:this={dragHorizontalDiv} style="display: none" on:drop|preventDefault={dropOnMarker} on:dragover|preventDefault on:dragenter|preventDefault on:dragleave|preventDefault>
 		<div class="drag-marker-left">&nbsp;</div>
 		<div class="drag-marker-right">&nbsp;</div>
 	</div>
-	<div class="drag-marker drag-vertical" bind:this={dragVertical} style="display: none" on:drop|preventDefault={dropOnMarker} on:dragover|preventDefault on:dragenter|preventDefault on:dragleave|preventDefault>
+	<div class="drag-marker drag-vertical" bind:this={dragVerticalDiv} style="display: none" on:drop|preventDefault={dropOnMarker} on:dragover|preventDefault on:dragenter|preventDefault on:dragleave|preventDefault>
 		<div class="drag-marker-top">&nbsp;</div>
 		<div class="drag-marker-bottom">&nbsp;</div>
 	</div>
+	<div bind:this={overlayDiv} class="overlay" />
 </div>
 
 <style>
+	.overlay {
+		position: absolute;
+		display: none;
+		opacity: 25%;
+		background-color: black;
+		z-index: 2;
+		pointer-events: none;
+	}
+
 	.drag-marker {
 		position: absolute;
 		background-color: cornflowerblue;
