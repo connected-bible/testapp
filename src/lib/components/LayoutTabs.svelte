@@ -38,7 +38,7 @@
 		if (!e || !e.target || !(e.target as HTMLElement).children) return;
 		const button: HTMLElement = (e.target as HTMLElement).children[2] as HTMLElement;
 		if (!button) return;
-		button.style.visibility = visible ? 'visible' : 'hidden';
+		button.style.display = visible ? 'block' : 'none';
 	}
 
 	function dragTab(e: DragEvent, tabIndex: number) {
@@ -94,15 +94,15 @@
 			on:dragend={() => layout.endDrag()}
 			on:drop|preventDefault={(e) => dropOnTab(e, index)}
 			on:dragover|preventDefault={(e) => (e.cancelBubble = true)}
-			on:dragenter={(e) => {
+			on:dragenter|preventDefault={(e) => {
 				e.cancelBubble = true;
 				layout.hideDragMarkers();
 			}}
-			on:dragleave={(e) => (e.cancelBubble = true)}
+			on:dragleave|preventDefault={(e) => (e.cancelBubble = true)}
 		>
-			<div style="display: block;" bind:this={titleDiv[index]} class="tab-title" on:dblclick={() => editTitle(index)}>{tab.title ?? tab.reference}</div>
+			<div style="display: block;" bind:this={titleDiv[index]} class="tab-title" on:dblclick={() => editTitle(index)} on:dragover|preventDefault on:dragenter|preventDefault on:dragleave|preventDefault>{tab.title ?? tab.reference}</div>
 			<input style="display: none;" bind:this={titleInput[index]} type="text" class="tab-title-input" on:change={() => changeTitle(index, titleInput[index].value)} on:blur={() => changeTitle(index, titleInput[index].value)} />
-			<div class="tab-close" style="visibility: hidden;" on:click={(e) => deleteTab(e, index)}>&#10006;</div>
+			<div class="tab-close" style="display:none;" on:click={(e) => deleteTab(e, index)} on:dragover|preventDefault on:dragenter|preventDefault on:dragleave|preventDefault>&#10006;</div>
 		</div>
 	{/each}
 	<div class="tab-plus" on:click={addTab}>+</div>
