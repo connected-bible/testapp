@@ -1,6 +1,11 @@
 import type Header from '$lib/components/Header.svelte';
 import type Layout from '$lib/components/Layout.svelte';
 
+export type MenuItem = {
+	caption: string;
+	command: () => void;
+};
+
 export type LayoutData = {
 	columns: LayoutColumnData[];
 };

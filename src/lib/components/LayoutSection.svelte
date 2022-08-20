@@ -1,9 +1,10 @@
 <script lang="ts">
-	import type { LayoutTabData } from '$lib/modules/App';
+	import type { LayoutTabData, MenuItem } from '$lib/modules/App';
 	import type Layout from '$lib/components/Layout.svelte';
 	import { Draggable } from '$lib/modules/Draggable';
 	import type { DragObject, DropObject } from '$lib/modules/Draggable';
-	import LayoutTabs from './LayoutTabs.svelte';
+	import LayoutTabs from '$lib/components/LayoutTabs.svelte';
+	import ContextMenu from './ContextMenu.svelte';
 	export let title: string;
 	export let tabs: LayoutTabData[];
 	export let columnIndex: number;
@@ -17,6 +18,21 @@
 	let titleDiv: HTMLDivElement;
 	let titleInput: HTMLInputElement;
 	let renaming: boolean = false;
+	let layoutTabs: LayoutTabs;
+	let contextMenuItems: MenuItem[] = [
+		{
+			caption: 'New Section',
+			command: () => {
+				layout.newSection(columnIndex, sectionIndex);
+			}
+		},
+		{
+			caption: 'Delete Section',
+			command: () => {
+				layout.deleteSection(columnIndex, sectionIndex);
+			}
+		}
+	];
 
 	function dragSection(e: DragEvent, columnIndex: number, sectionIndex: number) {
 		if (renaming) {
@@ -87,18 +103,28 @@
 	bind:this={sectionDiv}
 	class="section"
 	style={`grid-row-start:${gridRowStart}`}
-	on:drop|preventDefault={(e) => dropOnSection(e)}
+	on:drop|preventDefault={(e) => {
+		layoutTabs.hideDragMarker();
+		dropOnSection(e);
+	}}
 	on:dragover|preventDefault={(e) => dragOverSection(e, true)}
-	on:dragenter={(e) => dragOverSection(e, true)}
-	on:dragleave={(e) => dragOverSection(e, false)}
+	on:dragenter={(e) => {
+		layoutTabs.hideDragMarker();
+		dragOverSection(e, true);
+	}}
+	on:dragleave={(e) => {
+		layoutTabs.hideDragMarker();
+		dragOverSection(e, false);
+	}}
 >
 	<div class="title" bind:this={titleContainer} draggable={true} on:dragstart={(e) => dragSection(e, columnIndex, sectionIndex)} on:dragend={() => layout.endDrag()}>
 		<div on:click={() => layout.toggleSection(columnIndex, sectionIndex, !expanded)} class={expanded ? 'chevron bottom' : 'chevron'} />
 		<div style="display: block;" class="title-text" bind:this={titleDiv} on:dblclick={editTitle} on:blur={() => changeTitle(titleDiv.innerText)}>{title}</div>
 		<input style="display: none;" class="title-input" bind:this={titleInput} type="text" on:change={() => changeTitle(titleInput.value)} on:blur={() => changeTitle(titleInput.value)} />
+		<ContextMenu menuItems={contextMenuItems} iconType={'dots-vertical'} offsetTop={2} offsetRight={2} iconStyle={'grid-column-start:3;margin-right: 15px; place-self: center; width: 80%; height: 80%; margin-top: 1px;padding: 2px;'} />
 	</div>
-	<LayoutTabs {columnIndex} {sectionIndex} {tabs} {activeTab} {expanded} {layout} />
-	<div class="tab-content-container" style:display={expanded ? 'grid' : 'none'}>
+	<LayoutTabs bind:this={layoutTabs} {columnIndex} {sectionIndex} {tabs} {activeTab} {expanded} {layout} />
+	<div class="tab-content-container" style:display={expanded ? 'grid' : 'none'} on:dragenter|preventDefault>
 		{#each tabs as tab, index}
 			<div class="tab-content" style={`display:${index == activeTab ? 'block' : 'none'}`}>{tab.content}</div>
 		{/each}
@@ -133,7 +159,7 @@
 		vertical-align: top;
 		width: 0.27em;
 		color: white;
-		margin: 4px 10px 0 5px;
+		margin: 5px 10px 0 5px;
 		z-index: 0;
 	}
 
@@ -144,7 +170,7 @@
 
 	.title {
 		display: grid;
-		grid-template-columns: min-content 1fr;
+		grid-template-columns: min-content 1fr min-content;
 		background-color: purple;
 		font-weight: bold;
 		color: white;

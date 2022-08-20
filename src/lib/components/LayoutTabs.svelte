@@ -14,6 +14,7 @@
 	let tabDiv: HTMLDivElement[] = [];
 	let titleDiv: HTMLDivElement[] = [];
 	let titleInput: HTMLInputElement[] = [];
+	let dragMarkerDiv: HTMLDivElement;
 	let renaming: boolean = false;
 
 	// const dispatch = createEventDispatcher();
@@ -52,9 +53,11 @@
 
 	function dropOnTab(e: DragEvent, tabIndex: number) {
 		e.cancelBubble = true;
+		dragMarkerDiv.style.display = 'none';
 		const dragObj = Draggable.dragSource;
 		if (!dragObj) return;
-		layout.drop(dragObj, { componentType: 'tab', columnIndex: columnIndex, sectionIndex: sectionIndex, tabIndex: tabIndex, element: tabDiv[tabIndex] } as DropObject);
+		const dropIndex = tabIndex >= tabs.length ? tabIndex : tabIndex + getTabOffset(e, tabIndex);
+		layout.drop(dragObj, { componentType: 'tab', columnIndex: columnIndex, sectionIndex: sectionIndex, tabIndex: dropIndex, element: tabDiv[tabIndex] } as DropObject);
 	}
 
 	function editTitle(tabIndex: number) {
@@ -76,9 +79,57 @@
 		layout.changeTabTitle(columnIndex, sectionIndex, tabIndex, title);
 		renaming = false;
 	}
+
+	function dragOverTab(e: DragEvent, tabIndex: number) {
+		if (Draggable.dragSource?.componentType != 'tab') return;
+		const left = tabDiv[tabIndex].offsetLeft;
+		const width = tabDiv[tabIndex].offsetWidth;
+		const tabOffset = getTabOffset(e, tabIndex);
+		const offset = tabOffset == 1 ? width - 2 : -2;
+		dragMarkerDiv.style.left = `${left + offset}px`;
+		dragMarkerDiv.style.top = `${tabDiv[tabIndex].offsetTop - 5}px`;
+		dragMarkerDiv.style.height = `${tabDiv[tabIndex].offsetHeight + 10}px`;
+		dragMarkerDiv.style.display = 'grid';
+	}
+
+	function getTabOffset(e: DragEvent, tabIndex: number): number {
+		const src = Draggable.dragSource;
+		if (!src) return 0;
+		if (src.componentType != 'tab') return 0;
+		const otherTabs = src.columnIndex != columnIndex || src.sectionIndex != sectionIndex;
+		let offsetPoint = 0.5;
+		if (!otherTabs) offsetPoint = src.tabIndex == tabIndex - 1 ? 0 : src.tabIndex == tabIndex + 1 ? 1 : 0.5;
+		const left = tabDiv[tabIndex].offsetLeft;
+		const width = tabDiv[tabIndex].offsetWidth;
+		const x = (e.clientX - left) / width;
+		return x > offsetPoint ? 1 : 0;
+	}
+
+	export function hideDragMarker() {
+		dragMarkerDiv.style.display = 'none';
+	}
 </script>
 
-<div class="tabs" style={`display:${expanded ? 'flex' : 'none'};`}>
+<div
+	class="tabs"
+	style={`display:${expanded ? 'flex' : 'none'};`}
+	on:drop|preventDefault={(e) => dropOnTab(e, tabs.length)}
+	on:dragleave|preventDefault={(e) => {
+		const cType = Draggable.dragSource?.componentType;
+		if (cType == 'tab') e.cancelBubble = true;
+	}}
+	on:dragover|preventDefault={(e) => {
+		const cType = Draggable.dragSource?.componentType;
+		if (cType == 'tab') e.cancelBubble = true;
+	}}
+	on:dragenter|preventDefault={(e) => {
+		const cType = Draggable.dragSource?.componentType;
+		if (cType == 'tab') {
+			e.cancelBubble = true;
+			layout.hideDragMarkers();
+		}
+	}}
+>
 	{#each tabs as tab, index (index)}
 		<div
 			bind:this={tabDiv[index]}
@@ -91,21 +142,23 @@
 			animate:flip
 			draggable={true}
 			on:dragstart={(e) => dragTab(e, index)}
-			on:dragend={() => layout.endDrag()}
-			on:drop|preventDefault={(e) => dropOnTab(e, index)}
-			on:dragover|preventDefault={(e) => (e.cancelBubble = true)}
-			on:dragenter|preventDefault={(e) => {
-				e.cancelBubble = true;
-				layout.hideDragMarkers();
+			on:dragend={() => {
+				layout.endDrag();
+				dragMarkerDiv.style.display = 'none';
 			}}
-			on:dragleave|preventDefault={(e) => (e.cancelBubble = true)}
+			on:drop|preventDefault={(e) => dropOnTab(e, index)}
+			on:dragover|preventDefault={(e) => dragOverTab(e, index)}
 		>
 			<div style="display: block;" bind:this={titleDiv[index]} class="tab-title" on:dblclick={() => editTitle(index)} on:dragover|preventDefault on:dragenter|preventDefault on:dragleave|preventDefault>{tab.title ?? tab.reference}</div>
 			<input style="display: none;" bind:this={titleInput[index]} type="text" class="tab-title-input" on:change={() => changeTitle(index, titleInput[index].value)} on:blur={() => changeTitle(index, titleInput[index].value)} />
 			<div class="tab-close" style="display:none;" on:click={(e) => deleteTab(e, index)} on:dragover|preventDefault on:dragenter|preventDefault on:dragleave|preventDefault>&#10006;</div>
 		</div>
 	{/each}
-	<div class="tab-plus" on:click={addTab}>+</div>
+	<div class="tab-plus" on:click={addTab}><span style="margin-left:2px;">+</span></div>
+	<div class="drag-marker" bind:this={dragMarkerDiv} style="display: none">
+		<div class="drag-marker-top">&nbsp;</div>
+		<div class="drag-marker-bottom">&nbsp;</div>
+	</div>
 </div>
 
 <style>
@@ -167,12 +220,43 @@
 		width: 22px;
 		line-height: 15px;
 		color: black;
-		font-size: 2.05em;
-		margin: 0 10px;
+		font-size: 1.65em;
+		margin: 1px 10px;
 		padding: 0;
 	}
 
 	.tab-plus:hover {
 		background-color: silver;
+	}
+
+	.drag-marker {
+		position: absolute;
+		background-color: #007fd4;
+		display: grid;
+		width: 4px;
+		grid-template-rows: 1fr 1fr;
+		grid-template-columns: 1fr;
+		pointer-events: none;
+	}
+
+	.drag-marker-top {
+		width: 0;
+		height: 0;
+		border-left: 7px solid transparent;
+		border-right: 7px solid transparent;
+		border-top: 7px solid red;
+		grid-row-start: 1;
+		margin-left: -5px;
+	}
+
+	.drag-marker-bottom {
+		width: 0;
+		height: 0;
+		border-left: 7px solid transparent;
+		border-right: 7px solid transparent;
+		border-bottom: 7px solid red;
+		grid-row-start: 3;
+		margin-left: -5px;
+		justify-self: end;
 	}
 </style>

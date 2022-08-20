@@ -2,7 +2,7 @@
 	import type { App } from '$lib/modules/App';
 	import LayoutColumn from './LayoutColumn.svelte';
 	import LayoutSection from './LayoutSection.svelte';
-	import type { LayoutData, LayoutColumnData, LayoutSectionData } from '$lib/modules/App';
+	import type { LayoutData, LayoutColumnData, LayoutSectionData, LayoutTabData } from '$lib/modules/App';
 	import { Draggable } from '$lib/modules/Draggable';
 	import type Layout from './Layout.svelte';
 	import type { DragObject, DropObject } from '$lib/modules/Draggable';
@@ -63,9 +63,17 @@
 		data = data;
 	}
 
+	function getNewSection(firstTab?: LayoutTabData): LayoutSectionData {
+		return { title: '(Untitled)', tabs: [firstTab ?? getNewTab()], activeTab: 0, expanded: true };
+	}
+
+	function getNewTab(): LayoutTabData {
+		return { title: '(New)', reference: 'Gen-50', content: 'Open a new document or Bible passage while this window is active.' };
+	}
+
 	export function addTab(columnIndex: number, sectionIndex: number) {
 		const section = data.columns[columnIndex].sections[sectionIndex];
-		section.tabs.push({ title: '(New)', reference: 'Gen-50', content: 'Open a new document or Bible passage while this window is active.' });
+		section.tabs.push(getNewTab());
 		section.activeTab = section.tabs.length - 1;
 		data = data;
 	}
@@ -137,10 +145,9 @@
 				};
 				moveTab(dragObj, newDropObj);
 			} else if (dropObj.componentType == 'section') {
-				const newSection: LayoutSectionData = { title: '(Untitled)', tabs: [], activeTab: 0, expanded: true };
 				const dragSection = data.columns[dragObj.columnIndex].sections[dragObj.sectionIndex];
 				const dragTab = dragSection.tabs[dragObj.tabIndex];
-				newSection.tabs.push(dragTab);
+				const newSection = getNewSection(dragTab);
 				dragSection.tabs.splice(dragObj.tabIndex, 1);
 				if (dropObj.direction == 'left' || dropObj.direction == 'right') {
 					const newColumn: LayoutColumnData = { sections: [] };
@@ -204,11 +211,7 @@
 			}
 
 			// Clean up empty columns
-			for (let c = data.columns.length - 1; c >= 0; c--) {
-				if (data.columns[c].sections.length == 0) {
-					data.columns.splice(c, 1);
-				}
-			}
+			removeEmptyColumns();
 		}
 
 		// Reset drag objects
@@ -216,6 +219,14 @@
 
 		// Refresh the layout
 		data = data;
+	}
+
+	function removeEmptyColumns() {
+		for (let c = data.columns.length - 1; c >= 0; c--) {
+			if (data.columns[c].sections.length == 0) {
+				data.columns.splice(c, 1);
+			}
+		}
 	}
 
 	function moveTab(dragObj: DragObject, dropObj: DropObject) {
@@ -264,6 +275,19 @@
 		dragVerticalDiv.style.display = 'none';
 	}
 
+	export function newSection(columnIndex: number, sectionIndex: number) {
+		data.columns[columnIndex].sections.splice(sectionIndex + 1, 0, getNewSection());
+		data = data;
+	}
+
+	export function deleteSection(columnIndex: number, sectionIndex: number) {
+		const section = data.columns[columnIndex]?.sections[sectionIndex];
+		if (!section) return;
+		data.columns[columnIndex].sections.splice(sectionIndex, 1);
+		removeEmptyColumns();
+		data = data;
+	}
+
 	function dropOnMarker() {
 		drop(Draggable.dragSource, lastDragOver);
 	}
@@ -306,7 +330,7 @@
 
 	.drag-marker {
 		position: absolute;
-		background-color: cornflowerblue;
+		background-color: #007fd4;
 		display: grid;
 	}
 
