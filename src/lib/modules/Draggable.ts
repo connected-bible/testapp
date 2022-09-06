@@ -44,6 +44,8 @@ export class Draggable {
 
 	static changeIndex(items: any[], drag: number, drop: number): any[] {
 		const newItems = [...items];
+		console.log(`Drag: ${drag}`);
+		console.log(`Drop: ${drop}`);
 
 		if (drag < drop) {
 			newItems.splice(drop + 1, 0, newItems[drag]);
