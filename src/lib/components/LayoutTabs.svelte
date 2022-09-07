@@ -56,7 +56,9 @@
 		dragMarkerDiv.style.display = 'none';
 		const dragObj = Draggable.dragSource;
 		if (!dragObj) return;
-		layout.drop(dragObj, { componentType: 'tab', columnIndex: columnIndex, sectionIndex: sectionIndex, tabIndex: tabIndex, element: tabDiv[tabIndex] } as DropObject);
+		const offset = dragObj.columnIndex == columnIndex && dragObj.sectionIndex == sectionIndex && dragObj.tabIndex < tabIndex ? 0 : getTabOffset(e, tabIndex);
+		const dropIndex = tabIndex >= tabs.length ? tabIndex : tabIndex + offset;
+		layout.drop(dragObj, { componentType: 'tab', columnIndex: columnIndex, sectionIndex: sectionIndex, tabIndex: dropIndex, element: tabDiv[tabIndex] } as DropObject);
 	}
 
 	function editTitle(tabIndex: number) {

@@ -2,6 +2,7 @@
 	import type { App } from '$lib/modules/App';
 	import LayoutColumn from './LayoutColumn.svelte';
 	import LayoutSection from './LayoutSection.svelte';
+	import LayoutSplit from './LayoutSplit.svelte';
 	import type { LayoutData, LayoutColumnData, LayoutSectionData, LayoutTabData } from '$lib/modules/App';
 	import { Draggable } from '$lib/modules/Draggable';
 	import type Layout from './Layout.svelte';
@@ -288,8 +289,31 @@
 		data = data;
 	}
 
+	export function duplicateSection(columnIndex: number, sectionIndex: number) {
+		const s = data.columns[columnIndex]?.sections[sectionIndex];
+		if (!s) return;
+		const newSection: LayoutSectionData = { title: s.title, activeTab: s.activeTab, expanded: s.expanded, tabs: [] };
+		for (let i = 0; i < s.tabs.length; i++) {
+			newSection.tabs.push({ title: s.tabs[i].title, reference: s.tabs[i].reference, content: s.tabs[i].content });
+		}
+		data.columns[columnIndex].sections.splice(sectionIndex + 1, 0, newSection);
+		data = data;
+	}
+
 	function dropOnMarker() {
 		drop(Draggable.dragSource, lastDragOver);
+	}
+
+	export function split(orientation: 'row' | 'column', row: number, column: number, position: number) {
+		if (orientation == 'column') {
+			const leftColumn: HTMLDivElement = layoutDiv.children[column] as HTMLDivElement;
+			const rightColumn: HTMLDivElement = layoutDiv.children[column + 1] as HTMLDivElement;
+			if (!leftColumn || !rightColumn) return;
+			const width = leftColumn.offsetLeft + leftColumn.offsetWidth + 6 + rightColumn.offsetWidth;
+			const relativePosition = (position - leftColumn.offsetLeft) / width;
+			console.log(`Width: ${width}, Left: ${leftColumn.offsetLeft}, Position: ${position}, Relative Position: ${relativePosition}`);
+		}
+		// console.log(`Orientation: ${orientation}, Position: ${position}`);
 	}
 </script>
 
@@ -299,12 +323,12 @@
 			{#each column.sections as section, sectionIndex}
 				<LayoutSection {...section} {sectionIndex} {columnIndex} {layout} gridRowStart={sectionIndex * 2 + 1} />
 				{#if sectionIndex < column.sections.length - 1}
-					<div class="split-row" style={`grid-row-start:${sectionIndex * 2 + 2}`} />
+					<LayoutSplit orientation="row" column={columnIndex} row={sectionIndex} {layout} />
 				{/if}
 			{/each}
 		</LayoutColumn>
 		{#if columnIndex < data.columns.length - 1}
-			<div class="split-col" style={`grid-column-start:${columnIndex * 2 + 2}`} />
+			<LayoutSplit orientation="column" column={columnIndex} {layout} />
 		{/if}
 	{/each}
 	<div class="drag-marker drag-horizontal" bind:this={dragHorizontalDiv} style="display: none" on:drop|preventDefault={dropOnMarker} on:dragover|preventDefault on:dragenter|preventDefault on:dragleave|preventDefault>
@@ -394,32 +418,12 @@
 		padding: 0;
 		overflow: auto;
 		display: grid;
-		grid-template-columns: 1fr min-content 1fr;
+		/* grid-template-columns: 1fr min-content 1fr; */
 		grid-template-rows: 1fr;
 		width: 100%;
 		height: 100%;
 		margin: 0;
 		padding: 6px;
 		box-sizing: border-box;
-	}
-
-	.split-col {
-		background-color: transparent;
-		width: 6px;
-	}
-
-	.split-row {
-		background-color: transparent;
-		height: 6px;
-	}
-
-	.split-col:hover {
-		cursor: ew-resize;
-		background-color: #007fd4;
-	}
-
-	.split-row:hover {
-		cursor: ns-resize;
-		background-color: #007fd4;
 	}
 </style>

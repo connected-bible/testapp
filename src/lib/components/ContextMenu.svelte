@@ -21,7 +21,7 @@
 		return `background-color:${dotColor}; width:${dotSize}px; height:${dotSize}px; margin:${dotMargin}px;`;
 	}
 
-	function hover(on: boolean) {
+	function hoverDots(on: boolean) {
 		dotsDiv.style.backgroundColor = on ? iconHoverColor : '';
 		const children = dotsDiv.children;
 		for (let i = 0; i < children.length; i++) {
@@ -30,7 +30,7 @@
 	}
 
 	function showMenu(show: boolean) {
-		hover(show);
+		hoverDots(show);
 		menuDiv.style.top = `${dotsDiv.offsetTop + dotsDiv.offsetHeight + offsetTop}px`;
 		menuDiv.style.display = show ? 'block' : 'none';
 		if (justifyMenu == 'right') menuDiv.style.left = `${dotsDiv.offsetLeft + dotsDiv.offsetWidth - menuDiv.offsetWidth + offsetRight}px`;
@@ -38,7 +38,7 @@
 		const menuListener = (e: MouseEvent) => {
 			const target: any = e.target;
 			const isCommand = target && target.classList && target.classList.contains('command');
-			console.log(`Command: ${isCommand}`);
+			// TODO: REMOVE COMMENT: console.log(`Command: ${isCommand}`);
 			if (!isCommand) showMenu(false);
 		};
 		if (show) {
@@ -58,10 +58,10 @@
 		class:dots-horizontal={iconType == 'dots-horizontal'}
 		style={iconStyle}
 		on:click={() => showMenu(!visible)}
-		on:mouseover={() => hover(true)}
-		on:mouseout={() => hover(false)}
-		on:focus={() => hover(true)}
-		on:blur={() => hover(false)}
+		on:mouseover={() => hoverDots(true)}
+		on:mouseout={() => hoverDots(false)}
+		on:focus={() => hoverDots(true)}
+		on:blur={() => hoverDots(false)}
 	>
 		{#if iconType == 'dots-vertical' || iconType == 'dots-horizontal'}
 			<div class="menu-dot" style={getDotStyle()} />
@@ -92,7 +92,8 @@
 		display: grid;
 		cursor: pointer;
 		color: var(--text-color);
-		border-radius: 6px;
+		border-bottom-left-radius: 6px;
+		border-bottom-right-radius: 6px;
 		box-shadow: 3px 3px 8px #404040;
 	}
 
@@ -103,6 +104,10 @@
 		padding: 4px 8px;
 		font-size: 0.8em;
 		font-weight: normal;
+	}
+
+	.command:hover {
+		background-color: #e0e0e0;
 	}
 
 	.dots {

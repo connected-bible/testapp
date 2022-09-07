@@ -27,9 +27,15 @@
 			}
 		},
 		{
-			caption: 'Delete Section',
+			caption: 'Delete',
 			command: () => {
 				layout.deleteSection(columnIndex, sectionIndex);
+			}
+		},
+		{
+			caption: 'Duplicate',
+			command: () => {
+				layout.duplicateSection(columnIndex, sectionIndex);
 			}
 		}
 	];
