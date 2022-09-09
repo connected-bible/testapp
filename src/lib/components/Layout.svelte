@@ -16,6 +16,7 @@
 	let dragVerticalDiv: HTMLDivElement;
 	let overlayDiv: HTMLDivElement;
 	let lastDragOver: DropObject;
+	let fullScreen: { section: LayoutSectionData; columnIndex: number; sectionIndex: number } | null = null;
 
 	export function setApp(a: App) {
 		app = a;
@@ -28,6 +29,7 @@
 	let data: LayoutData = {
 		columns: [
 			{
+				width: 1.0,
 				sections: [
 					{
 						title: 'Jeffrey',
@@ -37,26 +39,38 @@
 							{ title: 'Fall of Mankind', reference: 'Gen-3', content: longString.substring(longString.length - 100, 100) + longString.substring(0, longString.length - 100) }
 						],
 						activeTab: 2,
-						expanded: true
+						expanded: true,
+						height: 1.0
 					}
 				]
 			},
 			{
+				width: 1.0,
 				sections: [
-					{ title: 'Russell', tabs: [{ reference: 'Lev-19', content: 'Russell is the longstanding family name.' }], activeTab: 0, expanded: false },
-					{ title: 'Kelleran', tabs: [{ reference: 'Rth-1', content: 'Kelleran is a rare and unusual name.' }], activeTab: 0, expanded: true }
+					{ title: 'Russell', tabs: [{ reference: 'Lev-19', content: 'Russell is the longstanding family name.' }], activeTab: 0, expanded: false, height: 1.0 },
+					{ title: 'Kelleran', tabs: [{ reference: 'Rth-1', content: 'Kelleran is a rare and unusual name.' }], activeTab: 0, expanded: true, height: 1.0 }
 				]
 			}
 		]
 	};
 
-	function getTemplateStyle(items: LayoutColumnData[] | LayoutSectionData[], type: 'columns' | 'sections'): string {
+	function getTemplateColumns(items: LayoutColumnData[]): string {
+		if (fullScreen) return '1fr';
 		const style: string[] = [];
-		let visibleItems = type == 'columns' ? data.columns.length : (items as LayoutSectionData[]).filter((item) => item.expanded == true).length;
 		for (let i = 0; i < items.length; i++) {
-			const size = type == 'columns' ? (items[i] as LayoutColumnData).width : (items[i] as LayoutSectionData).height;
-			const fr = size && visibleItems > 1 ? `${size}fr` : '1fr';
-			style.push(type == 'columns' ? fr : (items[i] as LayoutSectionData).expanded ? fr : 'min-content');
+			const size = items[i].width;
+			style.push(size && data.columns.length > 1 ? `${size}fr` : '1fr');
+			if (i < items.length - 1) style.push('min-content');
+		}
+		return style.join(' ');
+	}
+
+	function getTemplateSections(items: LayoutSectionData[]): string {
+		const style: string[] = [];
+		let visibleItems = items.filter((item) => item.expanded == true).length;
+		for (let i = 0; i < items.length; i++) {
+			const fr = items[i].height && visibleItems > 1 ? `${items[i].height}fr` : '1fr';
+			style.push(items[i].expanded ? fr : 'min-content');
 			if (i < items.length - 1) style.push('min-content');
 		}
 		return style.join(' ');
@@ -69,7 +83,7 @@
 	}
 
 	function getNewSection(firstTab?: LayoutTabData): LayoutSectionData {
-		return { title: '(Untitled)', tabs: [firstTab ?? getNewTab()], activeTab: 0, expanded: true };
+		return { title: '(Untitled)', tabs: [firstTab ?? getNewTab()], activeTab: 0, expanded: true, height: 1.0 };
 	}
 
 	function getNewTab(): LayoutTabData {
@@ -155,7 +169,7 @@
 				const newSection = getNewSection(dragTab);
 				dragSection.tabs.splice(dragObj.tabIndex, 1);
 				if (dropObj.direction == 'left' || dropObj.direction == 'right') {
-					const newColumn: LayoutColumnData = { sections: [] };
+					const newColumn: LayoutColumnData = { width: 1.0, sections: [] };
 					const spliceIndex = dropObj.direction == 'left' ? dropObj.columnIndex : dropObj.columnIndex + 1;
 					data.columns.splice(spliceIndex, 0, newColumn);
 					data.columns[spliceIndex].sections.push(newSection);
@@ -209,7 +223,7 @@
 
 				// Create a new column, insert the drag section, remove the drag section from old column
 			} else if (layoutDropColumn) {
-				const newColumn: LayoutColumnData = { sections: [dragSection] };
+				const newColumn: LayoutColumnData = { width: 1.0, sections: [dragSection] };
 				const spliceIndex = direction == 'left' ? dropObj.columnIndex : dropObj.columnIndex + 1;
 				data.columns.splice(spliceIndex, 0, newColumn);
 				dragColumn.sections.splice(dragObj.sectionIndex, 1);
@@ -246,20 +260,20 @@
 		// Ensure that we don't have partial width
 		let width = 0.0;
 		for (let c = 0; c < data.columns.length; c++) {
-			width += data.columns[c].width ?? 1.0;
+			width += data.columns[c].width;
 		}
 		const column = data.columns[data.columns.length - 1];
-		if (width < 1) column.width = Utils.round((column.width ?? 1.0) + 1 - width, 2);
+		if (width < 1) column.width = Utils.round(column.width + 1 - width, 2);
 
 		// Ensure that we don't have partial height
 		for (let c = 0; c < data.columns.length; c++) {
 			let height = 0.0;
 			const column = data.columns[c];
 			for (let s = 0; s < column.sections.length; s++) {
-				height += column.sections[s].height ?? 1.0;
+				height += column.sections[s].height;
 			}
 			const section = column.sections[column.sections.length - 1];
-			if (height < 1) section.height = Utils.round((section.height ?? 1.0) + 1 - height, 2);
+			if (height < 1) section.height = Utils.round(section.height + 1 - height, 2);
 		}
 	}
 
@@ -291,8 +305,8 @@
 			overlayDiv.style.width = `${sectionDiv.offsetWidth}px`;
 			overlayDiv.style.height = `${sectionDiv.offsetHeight}px`;
 		}
-		dragHorizontalDiv.style.display = direction == 'top' || direction == 'bottom' ? 'grid' : 'none';
-		dragVerticalDiv.style.display = direction == 'left' || direction == 'right' ? 'grid' : 'none';
+		dragHorizontalDiv.style.display = (direction == 'top' || direction == 'bottom') && !fullScreen ? 'grid' : 'none';
+		dragVerticalDiv.style.display = (direction == 'left' || direction == 'right') && !fullScreen ? 'grid' : 'none';
 		overlayDiv.style.display = direction == 'none' ? 'block' : 'none';
 		lastDragOver = dragOverObj;
 	}
@@ -325,7 +339,7 @@
 	export function duplicateSection(columnIndex: number, sectionIndex: number) {
 		const s = data.columns[columnIndex]?.sections[sectionIndex];
 		if (!s) return;
-		const newSection: LayoutSectionData = { title: s.title, activeTab: s.activeTab, expanded: s.expanded, tabs: [] };
+		const newSection: LayoutSectionData = { title: s.title, activeTab: s.activeTab, expanded: s.expanded, height: s.height, tabs: [] };
 		for (let i = 0; i < s.tabs.length; i++) {
 			newSection.tabs.push({ title: s.tabs[i].title, reference: s.tabs[i].reference, content: s.tabs[i].content });
 		}
@@ -343,7 +357,7 @@
 			const rightDiv: HTMLDivElement = layoutDiv.children[(column + 1) * 2] as HTMLDivElement;
 			const leftCol = data.columns[column];
 			const rightCol = data.columns[column + 1];
-			const frWidth = (leftCol.width ?? 1.0) + (rightCol.width ?? 1.0);
+			const frWidth = leftCol.width + rightCol.width;
 			const width = leftDiv.offsetWidth + 6 + rightDiv.offsetWidth;
 			let splitPercent = (position - leftDiv.offsetLeft) / width;
 			if (splitPercent < 0.05) splitPercent = 0.05;
@@ -356,7 +370,7 @@
 			const bottomDiv: HTMLDivElement = columnDiv.children[(row + 1) * 2] as HTMLDivElement;
 			const topSection = data.columns[column].sections[row];
 			const bottomSection = data.columns[column].sections[row + 1];
-			const frHeight = (topSection.height ?? 1.0) + (bottomSection.height ?? 1.0);
+			const frHeight = topSection.height + bottomSection.height;
 			const height = topDiv.offsetHeight + 6 + bottomDiv.offsetHeight;
 			let splitPercent = (position - topDiv.offsetTop) / height;
 			if (splitPercent < 0.08) splitPercent = 0.08;
@@ -368,22 +382,42 @@
 		}
 		data = data;
 	}
+
+	export function viewFullScreen(screen: { columnIndex: number; sectionIndex: number } | null) {
+		fullScreen = screen ? { section: data.columns[screen.columnIndex].sections[screen.sectionIndex], columnIndex: screen.columnIndex, sectionIndex: screen.sectionIndex } : null;
+		data = data;
+	}
 </script>
 
-<div id="layout" bind:this={layoutDiv} style={`grid-template-columns:${getTemplateStyle(data.columns, 'columns')}`}>
-	{#each data.columns as column, columnIndex}
-		<LayoutColumn templateRows={getTemplateStyle(column.sections, 'sections')} columnStart={columnIndex * 2 + 1}>
-			{#each column.sections as section, sectionIndex}
-				<LayoutSection {...section} {sectionIndex} {columnIndex} {layout} gridRowStart={sectionIndex * 2 + 1} />
-				{#if sectionIndex < column.sections.length - 1}
-					<LayoutSplit orientation="row" column={columnIndex} row={sectionIndex} {layout} />
-				{/if}
-			{/each}
-		</LayoutColumn>
-		{#if columnIndex < data.columns.length - 1}
-			<LayoutSplit orientation="column" column={columnIndex} {layout} />
-		{/if}
-	{/each}
+<div id="layout" bind:this={layoutDiv} style={`grid-template-columns:${getTemplateColumns(data.columns)}`}>
+	{#if fullScreen}
+		<LayoutSection
+			fullScreen={true}
+			title={fullScreen.section.title}
+			tabs={fullScreen.section.tabs}
+			activeTab={fullScreen.section.activeTab}
+			expanded={true}
+			columnIndex={fullScreen.columnIndex}
+			sectionIndex={fullScreen.sectionIndex}
+			{layout}
+			gridRowStart={1}
+		/>
+	{:else}
+		{#each data.columns as column, columnIndex}
+			<LayoutColumn templateRows={getTemplateSections(column.sections)} columnStart={columnIndex * 2 + 1}>
+				{#each column.sections as section, sectionIndex}
+					<LayoutSection title={section.title} tabs={section.tabs} activeTab={section.activeTab} expanded={section.expanded} {sectionIndex} {columnIndex} {layout} gridRowStart={sectionIndex * 2 + 1} />
+					{#if sectionIndex < column.sections.length - 1}
+						<LayoutSplit orientation="row" column={columnIndex} row={sectionIndex} {layout} />
+					{/if}
+				{/each}
+			</LayoutColumn>
+			{#if columnIndex < data.columns.length - 1}
+				<LayoutSplit orientation="column" column={columnIndex} {layout} />
+			{/if}
+		{/each}
+	{/if}
+
 	<div class="drag-marker drag-horizontal" bind:this={dragHorizontalDiv} style="display: none" on:drop|preventDefault={dropOnMarker} on:dragover|preventDefault on:dragenter|preventDefault on:dragleave|preventDefault>
 		<div class="drag-marker-left">&nbsp;</div>
 		<div class="drag-marker-right">&nbsp;</div>

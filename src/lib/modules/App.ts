@@ -11,7 +11,7 @@ export type LayoutData = {
 };
 
 export type LayoutColumnData = {
-	width?: number;
+	width: number;
 	sections: LayoutSectionData[];
 };
 
@@ -20,7 +20,7 @@ export type LayoutSectionData = {
 	tabs: LayoutTabData[];
 	activeTab: number;
 	expanded: boolean;
-	height?: number;
+	height: number;
 };
 
 export type LayoutTabData = {
