@@ -22,6 +22,7 @@
 	}
 
 	function hoverDots(on: boolean) {
+		if (!dotsDiv) return;
 		dotsDiv.style.backgroundColor = on ? iconHoverColor : '';
 		const children = dotsDiv.children;
 		for (let i = 0; i < children.length; i++) {
@@ -30,6 +31,7 @@
 	}
 
 	function showMenu(show: boolean) {
+		if (!menuDiv) return;
 		hoverDots(show);
 		menuDiv.style.top = `${dotsDiv.offsetTop + dotsDiv.offsetHeight + offsetTop}px`;
 		menuDiv.style.display = show ? 'block' : 'none';

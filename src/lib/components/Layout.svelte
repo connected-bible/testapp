@@ -7,6 +7,7 @@
 	import { Draggable } from '$lib/modules/Draggable';
 	import type Layout from './Layout.svelte';
 	import type { DragObject, DropObject } from '$lib/modules/Draggable';
+	import { Utils } from '$lib/modules/Utils';
 
 	let app: App;
 	let layout: Layout;
@@ -51,8 +52,11 @@
 
 	function getTemplateStyle(items: LayoutColumnData[] | LayoutSectionData[], type: 'columns' | 'sections'): string {
 		const style: string[] = [];
+		let visibleItems = type == 'columns' ? data.columns.length : (items as LayoutSectionData[]).filter((item) => item.expanded == true).length;
 		for (let i = 0; i < items.length; i++) {
-			style.push(type == 'columns' ? '1fr' : (items[i] as LayoutSectionData).expanded ? '1fr' : 'min-content');
+			const size = type == 'columns' ? (items[i] as LayoutColumnData).width : (items[i] as LayoutSectionData).height;
+			const fr = size && visibleItems > 1 ? `${size}fr` : '1fr';
+			style.push(type == 'columns' ? fr : (items[i] as LayoutSectionData).expanded ? fr : 'min-content');
 			if (i < items.length - 1) style.push('min-content');
 		}
 		return style.join(' ');
@@ -163,7 +167,7 @@
 				// Reset the active tab on the dragSection
 				setActiveTabOnDelete(dragSection, dragObj.tabIndex);
 
-				// Clean up the layout (descending order so the collections don't shift as you clean them up)
+				// Remove empty sections
 				for (let c = data.columns.length - 1; c >= 0; c--) {
 					const column = data.columns[c];
 					for (let s = column.sections.length - 1; s >= 0; s--) {
@@ -171,10 +175,10 @@
 							column.sections.splice(s, 1);
 						}
 					}
-					if (column.sections.length == 0) {
-						data.columns.splice(c, 1);
-					}
 				}
+
+				// Clean up the layout
+				cleanLayout();
 			} else if (dropObj.componentType == 'tab') {
 				moveTab(dragObj, dropObj);
 			}
@@ -212,7 +216,7 @@
 			}
 
 			// Clean up empty columns
-			removeEmptyColumns();
+			cleanLayout();
 		}
 
 		// Reset drag objects
@@ -222,11 +226,40 @@
 		data = data;
 	}
 
-	function removeEmptyColumns() {
+	function cleanLayout() {
+		// Remove empty columns / sections
 		for (let c = data.columns.length - 1; c >= 0; c--) {
+			// Remove empty sections
+			const column = data.columns[c];
+			for (let s = column.sections.length - 1; s >= 0; s--) {
+				if (column.sections[s].tabs.length == 0) {
+					column.sections.splice(s, 1);
+				}
+			}
+
+			// Remove empty columns
 			if (data.columns[c].sections.length == 0) {
 				data.columns.splice(c, 1);
 			}
+		}
+
+		// Ensure that we don't have partial width
+		let width = 0.0;
+		for (let c = 0; c < data.columns.length; c++) {
+			width += data.columns[c].width ?? 1.0;
+		}
+		const column = data.columns[data.columns.length - 1];
+		if (width < 1) column.width = Utils.round((column.width ?? 1.0) + 1 - width, 2);
+
+		// Ensure that we don't have partial height
+		for (let c = 0; c < data.columns.length; c++) {
+			let height = 0.0;
+			const column = data.columns[c];
+			for (let s = 0; s < column.sections.length; s++) {
+				height += column.sections[s].height ?? 1.0;
+			}
+			const section = column.sections[column.sections.length - 1];
+			if (height < 1) section.height = Utils.round((section.height ?? 1.0) + 1 - height, 2);
 		}
 	}
 
@@ -285,7 +318,7 @@
 		const section = data.columns[columnIndex]?.sections[sectionIndex];
 		if (!section) return;
 		data.columns[columnIndex].sections.splice(sectionIndex, 1);
-		removeEmptyColumns();
+		cleanLayout();
 		data = data;
 	}
 
@@ -304,16 +337,36 @@
 		drop(Draggable.dragSource, lastDragOver);
 	}
 
-	export function split(orientation: 'row' | 'column', row: number, column: number, position: number) {
+	export function split(orientation: 'row' | 'column', column: number, row: number, position: number) {
 		if (orientation == 'column') {
-			const leftColumn: HTMLDivElement = layoutDiv.children[column] as HTMLDivElement;
-			const rightColumn: HTMLDivElement = layoutDiv.children[column + 1] as HTMLDivElement;
-			if (!leftColumn || !rightColumn) return;
-			const width = leftColumn.offsetLeft + leftColumn.offsetWidth + 6 + rightColumn.offsetWidth;
-			const relativePosition = (position - leftColumn.offsetLeft) / width;
-			console.log(`Width: ${width}, Left: ${leftColumn.offsetLeft}, Position: ${position}, Relative Position: ${relativePosition}`);
+			const leftDiv: HTMLDivElement = layoutDiv.children[column * 2] as HTMLDivElement;
+			const rightDiv: HTMLDivElement = layoutDiv.children[(column + 1) * 2] as HTMLDivElement;
+			const leftCol = data.columns[column];
+			const rightCol = data.columns[column + 1];
+			const frWidth = (leftCol.width ?? 1.0) + (rightCol.width ?? 1.0);
+			const width = leftDiv.offsetWidth + 6 + rightDiv.offsetWidth;
+			let splitPercent = (position - leftDiv.offsetLeft) / width;
+			if (splitPercent < 0.05) splitPercent = 0.05;
+			if (splitPercent > 0.95) splitPercent = 0.95;
+			leftCol.width = Utils.round(splitPercent * frWidth, 2);
+			rightCol.width = Utils.round(frWidth - leftCol.width, 2);
+		} else {
+			const columnDiv: HTMLDivElement = layoutDiv.children[column * 2] as HTMLDivElement;
+			const topDiv: HTMLDivElement = columnDiv.children[row * 2] as HTMLDivElement;
+			const bottomDiv: HTMLDivElement = columnDiv.children[(row + 1) * 2] as HTMLDivElement;
+			const topSection = data.columns[column].sections[row];
+			const bottomSection = data.columns[column].sections[row + 1];
+			const frHeight = (topSection.height ?? 1.0) + (bottomSection.height ?? 1.0);
+			const height = topDiv.offsetHeight + 6 + bottomDiv.offsetHeight;
+			let splitPercent = (position - topDiv.offsetTop) / height;
+			if (splitPercent < 0.08) splitPercent = 0.08;
+			if (splitPercent > 0.92) splitPercent = 0.92;
+			topSection.height = Utils.round(splitPercent * frHeight, 2);
+			bottomSection.height = Utils.round(frHeight - topSection.height, 2);
+			topSection.expanded = true;
+			bottomSection.expanded = true;
 		}
-		// console.log(`Orientation: ${orientation}, Position: ${position}`);
+		data = data;
 	}
 </script>
 
